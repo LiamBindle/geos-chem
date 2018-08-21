@@ -72,12 +72,16 @@ function(shared_target TARGET SRC_FILES PUBLIC_DEPS)
     )
 endfunction(shared_target)
 
-function(static_target TARGET SRC_FILES)
+function(static_target TARGET SRC_FILES PUB_DEPS PUB_INC)
     message(STATUS "(A) Archive target: ${TARGET}")
     message("       Builds: lib${TARGET}.a")
     message("       Source directory: ${CMAKE_CURRENT_SOURCE_DIR}")
     message("       Source files:")
     print_list("${SRC_FILES}")
+    message("       Public dependencies:")
+    print_list("${PUB_DEPS}")
+    message("       Public includes:")
+    print_list("${PUB_INC}")
 
     # ${TARGET} is a static library
     add_library(${TARGET} STATIC 
@@ -90,11 +94,17 @@ function(static_target TARGET SRC_FILES)
             Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include
     )
 
+    # Add public dependencies
+    target_link_libraries(${TARGET}
+        PUBLIC ${PUB_DEPS}
+    )
+
     # Future targets linking-in ${TARGET} must include ./include (i.e. the modules)
     target_include_directories(${TARGET}
         PUBLIC  
             $<INSTALL_INTERFACE:include>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+            ${PUB_INC}
     )
 
     # Install ${TARGET} to ${CMAKE_INSTALL_PREFIX}/lib
