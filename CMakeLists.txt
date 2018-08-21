@@ -36,4 +36,6 @@ add_definitions(
 # NetcdfUtils
 add_subdirectory(KPP/Standard)
 add_subdirectory(Headers)
+add_subdirectory(GeosUtil)
 add_subdirectory(NcdfUtil)
+add_subdirectory(GeosUtil2)
