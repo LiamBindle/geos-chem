@@ -20,4 +20,4 @@ set(SOURCES
     CMN_O3_mod.F
     state_met_mod.F90
 )
-static_target(${TARGET} "${SOURCES}" "" "")
+static_target(${TARGET} "${SOURCES}" "kpp_firstpass" "")

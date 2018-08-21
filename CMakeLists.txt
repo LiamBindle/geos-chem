@@ -29,9 +29,11 @@ add_definitions(
     -DBPCH_DIAG=y
     -DBPCH_RST_IN=n
     -DBPCH_RST_OUT=n
+
     -cpp -w -auto -noalign -convert big_endian -O2 -vec-report0 -fp-model source -openmp -mcmodel=medium -shared-intel -traceback -DLINUX_IFORT -DBPCH_DIAG -DUCX -DGEOS_FP -DGRID4x5 -DUSE_REAL8 -DUSE_TIMERS
 )
 
 # NetcdfUtils
+add_subdirectory(KPP/Standard)
 add_subdirectory(Headers)
 add_subdirectory(NcdfUtil)
