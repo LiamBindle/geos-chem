@@ -13,4 +13,4 @@ set(ARCHIVE_SRC
     m_netcdf_io_write.F90
     ncdf_mod.F90
 )
-static_target(${NC_TARGET} ${ARCHIVE_SRC} "")
+static_target(${NC_TARGET} "${ARCHIVE_SRC}" "")

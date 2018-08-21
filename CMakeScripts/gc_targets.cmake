@@ -1,9 +1,17 @@
+function(print_list MY_LIST)
+    foreach(ITEM ${MY_LIST})
+    message("         + ${ITEM}")
+    endforeach(ITEM)
+endfunction(print_list)
+
 function(exe_target TARGET SRC_FILES PUBLIC_DEPS)
-    string(REPLACE ";" " " SRC_FILES_HR "${SRC_FILES}")
-    string(REPLACE ";" " " PUB_DEPS_HR  "${PUBLIC_DEPS}")
     message(STATUS "(X) Executable target: ${TARGET}")
-    message(STATUS "    + Source files: ${SRC_FILES_HR}")
-    message(STATUS "    + Dependencies: ${PUB_DEPS_HR}")
+    message("       Builds: ${TARGET}")
+    message("       Source directory: ${CMAKE_CURRENT_SOURCE_DIR}")
+    message("       Source files:")
+    print_list(${SRC_FILES})
+    message("       Dependencies:")
+    print_list(${PUBLIC_DEPS})
 
     # ${TARGET} is an executable
     add_executable(${TARGET}
@@ -22,11 +30,13 @@ function(exe_target TARGET SRC_FILES PUBLIC_DEPS)
 endfunction(exe_target)
 
 function(shared_target TARGET SRC_FILES PUBLIC_DEPS)
-    string(REPLACE ";" " " SRC_FILES_HR "${SRC_FILES}")
-    string(REPLACE ";" " " PUB_DEPS_HR  "${PUBLIC_DEPS}")
     message(STATUS "(S) Shared library target: ${TARGET}")
-    message(STATUS "    + Source files: ${SRC_FILES_HR}")
-    message(STATUS "    + Dependencies: ${PUB_DEPS_HR}")
+    message("       Builds: lib${TARGET}.so")
+    message("       Source directory: ${CMAKE_CURRENT_SOURCE_DIR}")
+    message("       Source files:")
+    print_list(${SRC_FILES})
+    message("       Dependencies:")
+    print_list(${PUBLIC_DEPS})
 
     # ${TARGET} is a shared library
     add_library(${TARGET} SHARED 
@@ -63,11 +73,11 @@ function(shared_target TARGET SRC_FILES PUBLIC_DEPS)
 endfunction(shared_target)
 
 function(static_target TARGET SRC_FILES)
-    string(REPLACE ";" " " SRC_FILES_HR "${SRC_FILES}")
-    string(REPLACE ";" " " PUB_DEPS_HR  "${PUBLIC_DEPS}")
     message(STATUS "(A) Archive target: ${TARGET}")
-    message(STATUS "    + Source files: ${SRC_FILES_HR}")
-    message(STATUS "    + Dependencies: ${PUB_DEPS_HR}")
+    message("       Builds: lib${TARGET}.a")
+    message("       Source directory: ${CMAKE_CURRENT_SOURCE_DIR}")
+    message("       Source files:")
+    print_list("${SRC_FILES}")
 
     # ${TARGET} is a static library
     add_library(${TARGET} STATIC 
@@ -82,7 +92,7 @@ function(static_target TARGET SRC_FILES)
 
     # Future targets linking-in ${TARGET} must include ./include (i.e. the modules)
     target_include_directories(${TARGET}
-        PUBLIC
+        PUBLIC  
             $<INSTALL_INTERFACE:include>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
     )
@@ -96,4 +106,4 @@ function(static_target TARGET SRC_FILES)
     install(DIRECTORY include/
         DESTINATION include
     )
-endfunction(shared_target)
+endfunction(static_target)
