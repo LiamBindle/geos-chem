@@ -36,4 +36,4 @@ set(SOURCES
     hco_fluxarr_mod.F90
     hco_restart_mod.F90
 )
-static_target(${TARGET} "${SOURCES}" "" "")
+static_target(${TARGET} "${SOURCES}" "GeosUtil2" "")
