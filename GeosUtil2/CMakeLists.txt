@@ -15,4 +15,4 @@ set(SOURCES
     time_mod.F
     transfer_mod.F
 )
-static_target(${TARGET} "${SOURCES}" "nc" "")
+static_target(${TARGET} "${SOURCES}" "nc")

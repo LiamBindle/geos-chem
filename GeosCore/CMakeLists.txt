@@ -10,7 +10,7 @@ set(SOURCES
     pjc_pfix_window_mod.F
     transport_mod.F
 )
-static_target(${TARGET} "${SOURCES}" "HCOI;rad;Isoropia" "")
+static_target(${TARGET} "${SOURCES}" "HCOI;rad;Isoropia")
 target_compile_options(${TARGET} PRIVATE "-r8")
 
 set(TARGET "GeosCore")
@@ -68,7 +68,6 @@ set(SOURCES
     isoropiaII_mod.F
     land_mercury_mod.F
     linoz_mod.F
-    main.F
     mapping_mod.F90
     mercury_mod.F
     merra2_read_mod.F90
@@ -103,4 +102,10 @@ set(SOURCES
     wetscav_mod.F
     YuIMN_Code.F
 )
-exe_target(${TARGET} "${SOURCES}" "Transport")
+static_target(${TARGET} "${SOURCES}" "Transport")
+
+set(TARGET "geos")
+set(SOURCES     
+    main.F
+)
+exe_target(${TARGET} "${SOURCES}" "GeosCore")

@@ -5,4 +5,4 @@ set(SOURCES
     ifort_errmsg.F
     julday_mod.F
 )
-static_target(${TARGET} "${SOURCES}" "Headers" "")
+static_target(${TARGET} "${SOURCES}" "Headers")

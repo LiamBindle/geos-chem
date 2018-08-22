@@ -67,12 +67,12 @@ function(shared_target TARGET SRC_FILES PUBLIC_DEPS)
     )
 
     # Install modules in ./include to ${CMAKE_INSTALL_PREFIX}/include
-    install(DIRECTORY include/
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/
         DESTINATION include
     )
 endfunction(shared_target)
 
-function(static_target TARGET SRC_FILES PUB_DEPS PUB_INC)
+function(static_target TARGET SRC_FILES PUB_DEPS)
     message(STATUS "(A) Archive target: ${TARGET}")
     message("       Builds: lib${TARGET}.a")
     message("       Source directory: ${CMAKE_CURRENT_SOURCE_DIR}")
@@ -80,8 +80,6 @@ function(static_target TARGET SRC_FILES PUB_DEPS PUB_INC)
     print_list("${SRC_FILES}")
     message("       Public dependencies:")
     print_list("${PUB_DEPS}")
-    message("       Public includes:")
-    print_list("${PUB_INC}")
 
     # ${TARGET} is a static library
     add_library(${TARGET} STATIC 
@@ -104,7 +102,6 @@ function(static_target TARGET SRC_FILES PUB_DEPS PUB_INC)
         PUBLIC  
             $<INSTALL_INTERFACE:include>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-            ${PUB_INC}
     )
 
     # Install ${TARGET} to ${CMAKE_INSTALL_PREFIX}/lib
@@ -113,7 +110,7 @@ function(static_target TARGET SRC_FILES PUB_DEPS PUB_INC)
     )
 
     # Install modules in ./include to ${CMAKE_INSTALL_PREFIX}/include
-    install(DIRECTORY include/
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/
         DESTINATION include
     )
 endfunction(static_target)

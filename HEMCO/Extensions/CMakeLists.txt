@@ -27,4 +27,4 @@ set(SOURCES
     hcox_gfed_mod.F90
     hcox_driver_mod.F90
 )
-static_target(${TARGET} "${SOURCES}" "HCO" "")
+static_target(${TARGET} "${SOURCES}" "HCO")

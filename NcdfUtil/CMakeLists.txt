@@ -13,4 +13,7 @@ set(ARCHIVE_SRC
     m_netcdf_io_write.F90
     ncdf_mod.F90
 )
-static_target(${NC_TARGET} "${ARCHIVE_SRC}" "GeosUtil;${NETCDF_F90_LIBRARIES}" "${NETCDF_F90_INCLUDE_DIR}")
+static_target(${NC_TARGET} "${ARCHIVE_SRC}" "GeosUtil;${NETCDF_F90_LIBRARIES}")
+target_include_directories(${NC_TARGET}
+    PUBLIC "${NETCDF_F90_INCLUDE_DIR}"
+)
