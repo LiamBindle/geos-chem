@@ -3,3 +3,4 @@ set(SOURCES
     isorropiaII_main_mod.F
 )
 static_target(${TARGET} "${SOURCES}" "")
+target_compile_options(${TARGET} PRIVATE -r8)

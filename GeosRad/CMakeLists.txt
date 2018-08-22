@@ -69,3 +69,4 @@ set(SOURCES
     test_arr_mult.F90
 )
 static_target(${TARGET} "${SOURCES}" "")
+target_compile_options(${TARGET} PRIVATE -r8 -O1 -override-limits)

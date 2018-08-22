@@ -9,6 +9,8 @@ include(${CMAKE_SOURCE_DIR}/CMakeScripts/gc_targets.cmake)
 # Set global compiler options
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fPIC -cpp -w -auto -noalign -convert big_endian -O2 -vec-report0 -fp-model source -openmp -mcmodel=medium -shared-intel -traceback -DLINUX_IFORT -DBPCH_DIAG -DUCX -DGEOS_FP -DGRID4x5 -DUSE_REAL8 -DUSE_TIMERS")
 
+
+# TODO: import custom targets that setup compiler options
 # Find NetCDF
 find_package(NetCDF REQUIRED COMPONENTS F90)
 

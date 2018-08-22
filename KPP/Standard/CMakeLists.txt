@@ -1,3 +1,4 @@
+# TODO: import env vars from Makefile
 set(TARGET "kpp_firstpass")
 set(SOURCES
     gckpp_Precision.F90
