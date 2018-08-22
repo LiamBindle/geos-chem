@@ -1161,7 +1161,7 @@ CONTAINS
     TOPLEV = InLev1 + NLEV
 
     ! Get pointer to grid edges on the native input grid
-    IF ( Met == 4 ) THEN
+    IF ( MET == 4 ) THEN
        EDG => G4_EDGE_NATIVE(InLev1:TOPLEV)
     ELSE
        EDG => G5_EDGE_NATIVE(InLev1:TOPLEV)
