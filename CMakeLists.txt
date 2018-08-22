@@ -30,6 +30,10 @@ add_definitions(
     -DBPCH_RST_IN=n
     -DBPCH_RST_OUT=n
 
+)
+
+add_compile_options(
+    -diag-disable 6633
     -cpp -w -auto -noalign -convert big_endian -O2 -vec-report0 -fp-model source -openmp -mcmodel=medium -shared-intel -traceback -DLINUX_IFORT -DBPCH_DIAG -DUCX -DGEOS_FP -DGRID4x5 -DUSE_REAL8 -DUSE_TIMERS
 )
 
@@ -43,3 +47,4 @@ add_subdirectory(History)
 add_subdirectory(HEMCO)
 add_subdirectory(ISOROPIA)
 add_subdirectory(GeosRad)
+add_subdirectory(GeosCore)

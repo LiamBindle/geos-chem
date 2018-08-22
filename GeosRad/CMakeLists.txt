@@ -68,4 +68,4 @@ set(SOURCES
     rrtmg_sw_vrtqdr.F90
     test_arr_mult.F90
 )
-static_target(${TARGET} "${SOURCES}" "Headers" "")
+static_target(${TARGET} "${SOURCES}" "" "")
