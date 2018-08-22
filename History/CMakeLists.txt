@@ -8,4 +8,4 @@ set(SOURCES
     history_netcdf_mod.F90
     history_mod.F90
 )
-static_target(${TARGET} "${SOURCES}" "GeosUtil2" "")
+static_target(${TARGET} "${SOURCES}" "Kpp" "")

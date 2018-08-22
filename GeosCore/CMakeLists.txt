@@ -1,3 +1,18 @@
+set(TARGET "Transport")
+set(SOURCES 
+    diag_mod.F
+    dao_mod.F
+    pjc_pfix_mod.F
+    tpcore_bc_mod.F
+    tpcore_fvdas_mod.F90
+    tpcore_window_mod.F90
+    # tendencies_mod.F90
+    pjc_pfix_window_mod.F
+    transport_mod.F
+)
+static_target(${TARGET} "${SOURCES}" "HCOI;rad;Isoropia" "")
+target_compile_options(${TARGET} PRIVATE "-r8")
+
 set(TARGET "GeosCore")
 set(SOURCES
 
@@ -12,7 +27,6 @@ set(SOURCES
     cleanup.F
     co2_mod.F
     convection_mod.F
-    dao_mod.F
     depo_mercury_mod.F
     diag03_mod.F
     diag04_mod.F
@@ -30,7 +44,6 @@ set(SOURCES
     diag53_mod.F
     diag56_mod.F
     diag63_mod.F
-    diag_mod.F
     diagnostics_mod.F90
     diag_oh_mod.F
     drydep_mod.F
@@ -66,14 +79,12 @@ set(SOURCES
     ocean_mercury_mod.F
     olson_landmap_mod.F90
     pbl_mix_mod.F
-    pjc_pfix_mod.F
-    pjc_pfix_window_mod.F
     planeflight_mod.F
     pops_mod.F
     restart_mod.F
     RnPbBe_mod.F
     rpmares_mod.F
-    rrtmg_rad_transfer_mod.F
+    # rrtmg_rad_transfer_mod.F
     seasalt_mod.F
     set_global_ch4_mod.F90
     set_prof_o3.F
@@ -83,13 +94,8 @@ set(SOURCES
     tagged_co_mod.F
     tagged_o3_mod.F
     tccon_ch4_mod.F
-    # tendencies_mod.F90
     # tomas_mod.F
     toms_mod.F
-    tpcore_bc_mod.F
-    tpcore_fvdas_mod.F90
-    tpcore_window_mod.F90
-    transport_mod.F
     ucx_mod.F
     uvalbedo_mod.F90
     vdiff_mod.F90
@@ -97,4 +103,4 @@ set(SOURCES
     wetscav_mod.F
     YuIMN_Code.F
 )
-static_target(${TARGET} "${SOURCES}" "HCOI;rad;Isoropia" "")
+exe_target(${TARGET} "${SOURCES}" "Transport")
