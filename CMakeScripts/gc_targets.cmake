@@ -76,9 +76,9 @@ function(static_target TARGET SRC_FILES PUB_DEPS)
     message(STATUS "(A) Archive target: ${TARGET}")
     message("       Builds: lib${TARGET}.a")
     message("       Source directory: ${CMAKE_CURRENT_SOURCE_DIR}")
-    message("       Source files:")
-    print_list("${SRC_FILES}")
-    message("       Public dependencies:")
+    list(LENGTH SRC_FILES NUM_SRC_FILES)
+    message("       Source files: ${NUM_SRC_FILES}")
+    message("       Dependencies:")
     print_list("${PUB_DEPS}")
 
     # ${TARGET} is a static library

@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.0.2)
 
 project(GEOS_Chem VERSION 12.0.0 LANGUAGES Fortran)
 
+
+# Get our compiler options
+include(${CMAKE_SOURCE_DIR}/CMakeScripts/gc_compiler_options.cmake)
+
+set(CMAKE_Fortran_FLAGS ${GLOBAL_COMPILER_FLAGS})
+
 # Include helper functions
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeScripts)
 include(${CMAKE_SOURCE_DIR}/CMakeScripts/gc_targets.cmake)
@@ -20,6 +26,3 @@ add_subdirectory(HEMCO)
 add_subdirectory(ISOROPIA)
 add_subdirectory(GeosRad)
 add_subdirectory(GeosCore)
-
-# Get our compiler options
-include(${CMAKE_SOURCE_DIR}/CMakeScripts/gc_compiler_options.cmake)

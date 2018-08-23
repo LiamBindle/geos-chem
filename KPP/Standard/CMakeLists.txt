@@ -5,7 +5,7 @@ set(SOURCES
     gckpp_Parameters.F90
     gckpp_Monitor.F90
 )
-static_target(${TARGET} "${SOURCES}" "GlobalFlags")
+static_target(${TARGET} "${SOURCES}" "")
 set(KPP_FIRST_PASS_COMPLETED "TRUE")
 
 set(TARGET "Kpp")
