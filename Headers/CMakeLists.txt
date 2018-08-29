@@ -21,3 +21,6 @@ set(SOURCES
     state_met_mod.F90
 )
 static_target(${TARGET} "${SOURCES}" "kpp_firstpass")
+target_compile_definitions(${TARGET}
+    PUBLIC ${GC_DEFINES}
+)

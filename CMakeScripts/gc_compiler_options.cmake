@@ -1,59 +1,95 @@
+# MET field
+set_dynamic_option(MET "GEOS_FP"
+    LOG GENERAL_OPTIONS_LOG
+    SELECT_EXACTLY 1
+    OPTIONS "GEOS_FP" "MERRA2"
+)
+set_dynamic_default(GC_DEFINES ${MET})
 
-macro(set_compile_option_group OPTION_GROUP)
-    # Set OPTION_GROUP to ARGN if user has not overridden
-    if(NOT "$ENV{${FLAG_GROUP}}" STREQUAL "")
-        set(${OPTION_GROUP} $ENV{${FLAG_GROUP}})
-        set(SOURCE "user override")
-    else()
-        string(REPLACE ";" " " SPACE_DELIMITED "${ARGN}")
-        set(${OPTION_GROUP} ${SPACE_DELIMITED})
-        set(SOURCE "default")
+# Check for nested grid
+set_dynamic_option(NESTED "FALSE"
+    LOG GENERAL_OPTIONS_LOG
+    SELECT_EXACTLY 1
+    OPTIONS "TRUE" "FALSE"
+)
+if(${NESTED})
+    # Which nested grid?
+    set_dynamic_option(REGION "NA"
+        LOG GENERAL_OPTIONS_LOG
+        SELECT_EXACTLY 1
+        OPTIONS "AS" "CH" "CU" "EU" "NA" 
+    )
+    set_dynamic_default(GC_DEFINES NESTED NESTED_${REGION})
+endif()
+
+# Horizontal grid
+if(${NESTED})
+    if("${MET}" STREQUAL "MERRA2") # Nested w/ MERRA2 
+        set_dynamic_option(GRID "0.5x0.625"
+            LOG GENERAL_OPTIONS_LOG
+            SELECT_EXACTLY 1
+            OPTIONS "0.5x0.625"
+        )
+    else() # Nested w/ GEOS_FP
+        set_dynamic_option(GRID "0.25x0.3125"
+            LOG GENERAL_OPTIONS_LOG
+            SELECT_EXACTLY 1
+            OPTIONS "0.25x0.3125"
+        )
     endif()
+else() # Not nested
+    set_dynamic_option(GRID "4x5"
+        LOG GENERAL_OPTIONS_LOG
+        SELECT_EXACTLY 1
+        OPTIONS "4x5" "2x2.5"
+    )
+endif()
+string(REPLACE "." "" TEMP "GRID${GRID}")
+set_dynamic_default(GC_DEFINES ${TEMP})
+
+# Chemistry mechanism
+set_dynamic_option(MECH "Standard"
+    LOG GENERAL_OPTIONS_LOG
+    SELECT_EXACTLY 1
+    OPTIONS "Standard" "Tropchem" "SOA_SVPOA"
+)
+
+message(STATUS "General settings:")
+dump_log(GENERAL_OPTIONS_LOG)
+
+
+# Get diagnostics
+set_dynamic_default(DIAG 
+    "BPCH_DIAG" "BPCH_TIMESER" "BPCH_TPBC"
+
+    LOG EXTRA_DEFS_LOG
+)
+set_dynamic_default(GC_DEFINES ${DIAG})
+
+
+# Get extra defines
+set_dynamic_default(EXTRA 
+    "UCX" "USE_REAL8" "USE_TIMERS"
     
-    message("         + ${OPTION_GROUP}='${${OPTION_GROUP}}'")
-endmacro(set_compile_option_group)
+    LOG EXTRA_DEFS_LOG
+)
+set_dynamic_default(GC_DEFINES ${EXTRA})
 
+message(STATUS "Additional definitions:")
+dump_log(EXTRA_DEFS_LOG)
 
-message(STATUS "(F) Compiler flag groups:")
+# Get resulting GC_DEFINES
+string(REPLACE " " ";" GC_DEFINES "${GC_DEFINES}")
+set_dynamic_default(GC_DEFINES LOG RESULTING_DEFINES_LOG)
 
-# Options based on compiler family
-set_compile_option_group(FC_FAMILY_FLAGS
-    -fPIC -cpp -w -auto -noalign -convert big_endian -O2 -vec-report0 
-    -fp-model source -openmp -mcmodel=medium -shared-intel -traceback
+# Get compiler options
+set_dynamic_default(FC_OPTIONS
+    -fPIC -cpp -w -auto -noalign "-convert big_endian" -O2 -vec-report0 
+    "-fp-model source" -openmp -mcmodel=medium -shared-intel -traceback
     -DLINUX_IFORT
+
+    LOG RESULTING_DEFINES_LOG
 )
 
-# Diagnostic flags
-set_compile_option_group(DIAG_FLAGS
-    # -DNC_DIAG
-    -DBPCH_DIAG
-    -DBPCH_TIMESER
-    -DBPCH_TPBC
-)
-
-# Met flags
-set_compile_option_group(MET_FLAGS
-    -DGEOS_FP
-)
-
-# Horizontal grid flags
-set_compile_option_group(HGRID_FLAGS
-    -DGRID4x5
-)
-
-# Miscellaneous flags
-set_compile_option_group(MISC_FLAGS
-    -DUCX
-    -DUSE_REAL8 
-    -DUSE_TIMERS
-)
-
-message(STATUS "(F) Setting global compiler flags to concatenation of all groups:")
-# Group all subgroups into GLOBAL_COMPILER_FLAGS
-set_compile_option_group(GLOBAL_COMPILER_FLAGS
-    ${FC_FAMILY_FLAGS}
-    ${DIAG_FLAGS}
-    ${MET_FLAGS}
-    ${HGRID_FLAGS}
-    ${MISC_FLAGS}
-)
+message(STATUS "Resulting definitions/options:")
+dump_log(RESULTING_DEFINES_LOG)

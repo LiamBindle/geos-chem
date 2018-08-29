@@ -5,13 +5,9 @@ function(print_list MY_LIST)
 endfunction(print_list)
 
 function(exe_target TARGET SRC_FILES PUBLIC_DEPS)
-    message(STATUS "(X) Executable target: ${TARGET}")
-    message("       Builds: ${TARGET}")
-    message("       Source directory: ${CMAKE_CURRENT_SOURCE_DIR}")
-    message("       Source files:")
-    print_list(${SRC_FILES})
-    message("       Dependencies:")
-    print_list(${PUBLIC_DEPS})
+    list(LENGTH SRC_FILES NUM_SRC_FILES)
+    list(LENGTH PUBLIC_DEPS NUM_PUBLIC_DEPS)
+    message(STATUS "Executable target: ${TARGET} (src: ${NUM_SRC_FILES}, deps: ${NUM_PUBLIC_DEPS})")
 
     # ${TARGET} is an executable
     add_executable(${TARGET}
@@ -30,13 +26,9 @@ function(exe_target TARGET SRC_FILES PUBLIC_DEPS)
 endfunction(exe_target)
 
 function(shared_target TARGET SRC_FILES PUBLIC_DEPS)
-    message(STATUS "(S) Shared library target: ${TARGET}")
-    message("       Builds: lib${TARGET}.so")
-    message("       Source directory: ${CMAKE_CURRENT_SOURCE_DIR}")
-    message("       Source files:")
-    print_list(${SRC_FILES})
-    message("       Dependencies:")
-    print_list(${PUBLIC_DEPS})
+    list(LENGTH SRC_FILES NUM_SRC_FILES)
+    list(LENGTH PUBLIC_DEPS NUM_PUBLIC_DEPS)
+    message(STATUS "Shared library target: lib${TARGET}.so (src: ${NUM_SRC_FILES}, deps: ${NUM_PUBLIC_DEPS})")
 
     # ${TARGET} is a shared library
     add_library(${TARGET} SHARED 
@@ -73,13 +65,9 @@ function(shared_target TARGET SRC_FILES PUBLIC_DEPS)
 endfunction(shared_target)
 
 function(static_target TARGET SRC_FILES PUB_DEPS)
-    message(STATUS "(A) Archive target: ${TARGET}")
-    message("       Builds: lib${TARGET}.a")
-    message("       Source directory: ${CMAKE_CURRENT_SOURCE_DIR}")
     list(LENGTH SRC_FILES NUM_SRC_FILES)
-    message("       Source files: ${NUM_SRC_FILES}")
-    message("       Dependencies:")
-    print_list("${PUB_DEPS}")
+    list(LENGTH PUB_DEPS NUM_PUBLIC_DEPS)
+    message(STATUS "Static library target: lib${TARGET}.a (s:${NUM_SRC_FILES}/d:${NUM_PUBLIC_DEPS})")
 
     # ${TARGET} is a static library
     add_library(${TARGET} STATIC 

@@ -70,3 +70,6 @@ set(SOURCES
 )
 static_target(${TARGET} "${SOURCES}" "")
 target_compile_options(${TARGET} PRIVATE -r8 -O1 -override-limits)
+target_compile_definitions(${TARGET}
+    PUBLIC ${GC_DEFINES}
+)

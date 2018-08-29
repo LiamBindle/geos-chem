@@ -4,9 +4,10 @@ project(GEOS_Chem VERSION 12.0.0 LANGUAGES Fortran)
 
 
 # Get our compiler options
+include(${CMAKE_SOURCE_DIR}/CMakeScripts/gc_util.cmake)
 include(${CMAKE_SOURCE_DIR}/CMakeScripts/gc_compiler_options.cmake)
 
-set(CMAKE_Fortran_FLAGS ${GLOBAL_COMPILER_FLAGS})
+set(CMAKE_Fortran_FLAGS ${FC_OPTIONS})
 
 # Include helper functions
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeScripts)
