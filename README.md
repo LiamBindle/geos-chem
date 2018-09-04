@@ -38,10 +38,11 @@ CMake is a mature utility for _generating_ build systems. CMake is 18 years old 
 
 Ultimately, I think that CMake would simplify the process of building GCHP. 
 
-## Proposed workflow
+## Updated workflow
+Rather than using GEOS-Chem-Unittest to generate a run directory, the proposed CMake build system would allow GEOS-Chem to be build directly from the source code repo. Below, on the left, is an example of running CMake to configure the GEOS-Chem build. On the right is an example of what the output log looks like. For systems that do not support colorized text (or cases where its logged to a file), the colors can be disabled. 
 
 ![Image of using CMake](https://github.com/LiamBindle/geos-chem/raw/bistro/docs/cmake.png)
 
-## Migration strategy
+## Migration
 CMake can be implemented _alongside_ the existing build system, meaning current Make build system can be left untouched until it becomes the recommended approach.
 
