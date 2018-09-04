@@ -1,82 +1,42 @@
-# README for the GEOS-Chem Source code repository
+# Probing a CMake-based build system for GEOS-Chem
+I setup this repo to explore the idea of using CMake in GEOS-Chem, and gauge the size of such a project.
 
-This repository (https://github.com/gcst/geos-chem) contains the source code for the GEOS-Chem model of atmospheric chemistry and composition. 
+## Motivation
+My motivation for looking into a CMake-based build system for GEOS-Chem comes from some difficulties that I experience when building GCHP on Compute Canada's Graham cluster.
+The build system for GEOS-Chem Classic is well tested and thus reliable, but building GCHP is still tricky.
+The difficulties that I encountered when building GCHP on the Graham cluster are the following:
 
----
----
----
-## Important notes
+1. Verbose build logs (excessively)
+    - Difficult to trace build errors
+    - Unclear state after failed builds
+2. Poor cross-platform support
+    - Unable to build on Stetson cluster
+    - Some hacking around required to build on Graham
+3. Current build system has a complicated flow (routing)
+    - Code root &rarr; GeosCore &rarr; All subprojects &rarr; GeosCore
 
-### We have migrated from Bitbucket to Github!
-As of June 2018, we have migrated the GEOS-Chem source code repository to back Github.  Going forward, please make sure to clone or pull code updates ONLY from this repository.
+These difficulties are amplified by the fact that compiling GCHP takes a long time&mdash;a single build taking a few hours&mdash;which makes debugging time consuming.
+The source of these shortcomings are things that CMake was specifically designed to solve.
 
-### The GEOS-Chem version numbering scheme is changing!
+## Benefits of CMake
+CMake is a mature utility for _generating_ build systems. CMake is 18 years old with regular updates (most recently on Aug 9, 2018), and is used by many scientific projects including HDF5, LAPACK, ROOT, and QGIS. Additional non-scientific software includes zlib, MySQL, MiKTeX, and Netflix.  
 
-We are migrating to a purely numeric versioning system in order to adhere more closely to software development best practices. In order to facilitate the switchover between versioning systems, the __GEOS-Chem v11-02-final__ version will also carry the designation __GEOS-Chem 12.0.0__.
+1. Well defined scopes for compiler options/flags
+    - Bottom up (inherited from dependencies)
+    - Top down (project-wide and subproject-wide)
+    - Results in a simpler build system (conceptually) which in turn makes debugging easier
+2. Designed to be platform and compiler agnostic
+3. Powerful tools for finding/using external dependencies
+    - E.g. NetCDF include and lib directories are automatically detected
+    - ESMF and MAPL could be made external dependencies (currently internal)
+        - Removes responsibility for building ESMF/MAPL (get binaries via conda maybe?)
+        - Speed up GCHP build
+4. Seperate source and build trees
+   - Source tree is never modified during a build
+   - State of build is obvious after a successful/failed build
+    - Aided by clear build logs
 
-For a complete description of the new versioning system, please see our GEOS-Chem version numbering system wiki page: http://wiki.geos-chem.org/GEOS-Chem_version_numbering_system
+Ultimately, I think that CMake would simplify the process of building GCHP. 
 
----
----
----
-
-## GEOS-Chem Development
-
-### Branches
-This repository contains several branches, each of which contains several code updates belonging to a particular line of development.  In particular you will see:
-
- * The __master__ branch always contains the last benchmarked version.  You should never add new code directly into this branch.  Instead, open a new branch off of master and add your code there.
-
- * The __Dev__ branch always contains in-development code for the next version to be benchmarked.  Code in Dev is very much "work in progress" and should not relied upon until it has been debugged and benchmarked.
-
- * The __GEOS__ branch contains updates that are specific to the interface between GEOS-Chem and the NASA GEOS-DAS Earth System Model.  Most GEOS-Chem users can simply ignore this branch.
-
- * From time to time, you will see other branches pertaining to new lines of development being created.  Once the code in these branches has been sufficiently validated, these branches will be merged back into the master branch.
-
-### Versions
-
-GEOS-Chem versions correspond to those points in the code development history where benchmark simulations were performed in order to validate the scientific output of GEOS-Chem.  All versions are benchmarked with a 1-month simulation; some versions are benchmarked with both 1-month and 1-year simulations.  To learn more about GEOS-Chem versions and the features and/or bug fixes they contained, please visit the GEOS-Chem wiki pages listed below.
-
-For versions __GEOS-Chem v11-02a__ through __GEOS-Chem v11-02-release-candidate__, see:
-* http://wiki.geos-chem.org/GEOS-Chem_v11-02
-* http://wiki.geos-chem.org/GEOS-Chem_v11-02_benchmark_history
-
-For __GEOS-Chem 12.\*.\*__ versions, see:
-* http://wiki.geos-chem.org/GEOS-Chem_12
-* http://wiki.geos-chem.org/GEOS-Chem_12_benchmark_history
-
-All benchmarked GEOS-Chem versions are tagged in the Git history. Use _git tag_ in your terminal to see a list of available tags. Tags will also be highlighted in the _gitk_ browser window.
-
-### Special version names to note
-
-A couple of special version names are noted below:
-
-* The v11-02-release-candidate version is tagged as __v11-02-rc__.  Users are encouraged to download and test this version and to report any bugs or issues to the GEOS-Chem Support Team.  These issues will be fixed beforethe final v11-02  / 12.0.0 release.
-
-* As described above, the version __v11-02-final__ will also carry the designation __12.0.0__ simultaneously.  This allows us to reference the version in both the old and the new version numbering systems.
-
-# Documentation
-
-### Web site
-The __GEOS-Chem web site__ is a good place to get started.  It will point you to many important GEOS-Chem resources.
-* http://www.geos-chem.org
-
-### Online user's manual
-You can find the __The GEOS-Chem User's Guide__ online here:
-* http://manual.geos-chem.org
-
-### Wiki
-The most up-to-date information about GEOS-Chem is posted on the __GEOS-Chem wiki__.  Here you will find information about technical issues, bug fixes, and other pertinent topics.
-* http://wiki-geos.chem.org
-
-## GEOS-Chem run directories
-To generate GEOS-Chem run directories, please clone the __geos-chem-unittest__ repository and follow the instructions as listed in the GEOS-Chem wiki pags listed below.
-
-## Support 
-We encourage GEOS-Chem users to use the Github issue tracker attached to this repository to report  bugs or technical issues with the GEOS-Chem code.
-
-You are also invited to direct GEOS-Chem support requests to the GEOS-Chem Support Team at geos-chem-support@as.harvard.edu.
-
-20 Jun 2018
-GEOS-Chem Support Team
-geos-chem-support@as.harvard.edu
+## Migration strategy
+CMake can be implemented _alongside_ the existing build system, meaning current Make build system can be left untouched until the new C

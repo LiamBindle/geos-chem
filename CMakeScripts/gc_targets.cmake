@@ -7,7 +7,7 @@ endfunction(print_list)
 function(exe_target TARGET SRC_FILES PUBLIC_DEPS)
     list(LENGTH SRC_FILES NUM_SRC_FILES)
     list(LENGTH PUBLIC_DEPS NUM_PUBLIC_DEPS)
-    message(STATUS "Executable target: ${TARGET} (src: ${NUM_SRC_FILES}, deps: ${NUM_PUBLIC_DEPS})")
+    message(STATUS "Executable target: ${TARGET} (s:${NUM_SRC_FILES}/d:${NUM_PUBLIC_DEPS})")
 
     # ${TARGET} is an executable
     add_executable(${TARGET}
@@ -28,7 +28,7 @@ endfunction(exe_target)
 function(shared_target TARGET SRC_FILES PUBLIC_DEPS)
     list(LENGTH SRC_FILES NUM_SRC_FILES)
     list(LENGTH PUBLIC_DEPS NUM_PUBLIC_DEPS)
-    message(STATUS "Shared library target: lib${TARGET}.so (src: ${NUM_SRC_FILES}, deps: ${NUM_PUBLIC_DEPS})")
+    message(STATUS "Shared library target: lib${TARGET}.so (s:${NUM_SRC_FILES}/d: ${NUM_PUBLIC_DEPS})")
 
     # ${TARGET} is a shared library
     add_library(${TARGET} SHARED 
