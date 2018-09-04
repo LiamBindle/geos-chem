@@ -40,7 +40,7 @@ Ultimately, I think that CMake would simplify the process of building GCHP.
 
 ## Proposed workflow
 
-![Image of using CMake](https://github.com/LiamBindle/geos-chem/tree/bistro/docs/cmake.png)
+![Image of using CMake](https://github.com/LiamBindle/geos-chem/raw/bistro/docs/cmake.png)
 
 ## Migration strategy
 CMake can be implemented _alongside_ the existing build system, meaning current Make build system can be left untouched until it becomes the recommended approach.
