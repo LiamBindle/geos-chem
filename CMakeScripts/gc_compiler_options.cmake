@@ -93,3 +93,7 @@ set_dynamic_default(FC_OPTIONS
 
 message(STATUS "Resulting definitions/options:")
 dump_log(RESULTING_DEFINES_LOG)
+
+# Replace ';' character (delimiting lists) with ' '
+string(REPLACE ";" " " GC_DEFINES "${GC_DEFINES}")
+string(REPLACE ";" " " FC_OPTIONS "${FC_OPTIONS}")

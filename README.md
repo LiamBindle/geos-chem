@@ -38,5 +38,10 @@ CMake is a mature utility for _generating_ build systems. CMake is 18 years old 
 
 Ultimately, I think that CMake would simplify the process of building GCHP. 
 
+## Proposed workflow
+
+![Image of using CMake](https://github.com/LiamBindle/geos-chem/tree/bistro/docs/cmake.png)
+
 ## Migration strategy
-CMake can be implemented _alongside_ the existing build system, meaning current Make build system can be left untouched until the new C
+CMake can be implemented _alongside_ the existing build system, meaning current Make build system can be left untouched until it becomes the recommended approach.
+
