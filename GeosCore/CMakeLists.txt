@@ -10,7 +10,8 @@ set(SOURCES
     pjc_pfix_window_mod.F
     transport_mod.F
 )
-static_target(${TARGET} "${SOURCES}" "HCOI;rad;Isoropia")
+set(PUB_DEPS "HCOI" ${RRTMG_TARGET} ${ISOROPIA_TARGET})
+static_target(${TARGET} "${SOURCES}" "${PUB_DEPS}")
 target_compile_options(${TARGET} PRIVATE "-r8")
 
 set(TARGET "GeosCore")

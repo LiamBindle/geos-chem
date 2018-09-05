@@ -1,4 +1,5 @@
-set(TARGET "rad")
+set(RRTMG_TARGET "rad")
+set(RRTMG_TARGET "${RRTMG_TARGET}" PARENT_SCOPE)
 set(SOURCES
     mcica_random_numbers.F90
     mcica_subcol_gen_lw.F90
@@ -68,8 +69,8 @@ set(SOURCES
     rrtmg_sw_vrtqdr.F90
     test_arr_mult.F90
 )
-static_target(${TARGET} "${SOURCES}" "")
-target_compile_options(${TARGET} PRIVATE -r8 -O1 -override-limits)
-target_compile_definitions(${TARGET}
+static_target(${RRTMG_TARGET} "${SOURCES}" "")
+target_compile_options(${RRTMG_TARGET} PRIVATE -r8 -O1 -override-limits)
+target_compile_definitions(${RRTMG_TARGET}
     PUBLIC ${GC_DEFINES}
 )

@@ -54,6 +54,16 @@ set_dynamic_option(MECH "Standard"
     OPTIONS "Standard" "Tropchem" "SOA_SVPOA"
 )
 
+# RRTMG
+set_dynamic_option(RRTMG "FALSE"
+    LOG GENERAL_OPTIONS_LOG
+    SELECT_EXACTLY 1
+    OPTIONS "TRUE" "FALSE"
+)
+if(${RRTMG})
+    set_dynamic_default(GC_DEFINES "RRTMG")
+endif()
+
 message(STATUS "General settings:")
 dump_log(GENERAL_OPTIONS_LOG)
 
@@ -95,5 +105,28 @@ message(STATUS "Resulting definitions/options:")
 dump_log(RESULTING_DEFINES_LOG)
 
 # Replace ';' character (delimiting lists) with ' '
-string(REPLACE ";" " " GC_DEFINES "${GC_DEFINES}")
 string(REPLACE ";" " " FC_OPTIONS "${FC_OPTIONS}")
+
+# Get configuration hash
+set(SAFE_CFG_HASHES
+    f549694
+)
+
+# Sort build definitions (which define build configuration)
+set(CFG_SORTED ${GC_DEFINES})
+list(SORT CFG_SORTED)
+
+# Get first 7 digits of the hash
+string(REPLACE ";" ";" CFG_SORTED "${GC_DEFINES}")
+string(SHA1 CFG_HASH "${CFG_SORTED}")
+string(SUBSTRING "${CFG_HASH}" 0 7 CFG_HASH)
+
+# Print the configuration hash
+message(STATUS "Build configuration hash: ${CFG_HASH}")
+
+# Check if the current configuration has been verified
+list(FIND SAFE_CFG_HASHES "${CFG_HASH}" SAFE_IDX)
+if(${SAFE_IDX} EQUAL -1) 
+    message(WARNING "This build configuration, ${CFG_HASH}, has not been validated. Proceed with caution.")
+endif()
+
