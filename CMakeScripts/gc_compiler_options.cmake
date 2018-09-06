@@ -175,6 +175,6 @@ warn_path_rules(EXTDATA WARNING_LOG
 )
 set(INSTALL_RUNDIR "TRUE")
 foreach(WARN ${WARNING_LOG})
-    message("Warning: ${WARN}")
+    message("   Warning: ${WARN}")
     set(INSTALL_RUNDIR "FALSE")
 endforeach()
