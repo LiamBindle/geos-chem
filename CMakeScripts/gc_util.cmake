@@ -81,7 +81,7 @@ endmacro()
 
 function(warn_path_rules VAR LOG)
     cmake_parse_arguments(ENFORCE
-        "EXISTS;WRITABLE"
+        "EXISTS;PARENT;WRITABLE"
         ""
         "CONTAINS"
         ${ARGN}
@@ -91,6 +91,11 @@ function(warn_path_rules VAR LOG)
     if(NOT IS_ABSOLUTE "${${VAR}}")
         set(${VAR} "${CMAKE_BINARY_DIR}/${${VAR}}")
         set(${VAR} "${${VAR}}" PARENT_SCOPE)
+    endif()
+
+    # Are we looking at the parent directory?
+    if(${ENFORCE_PARENT})
+        get_filename_component(${VAR} "${${VAR}}" DIRECTORY)
     endif()
 
     # Enforce path rules
@@ -111,7 +116,7 @@ function(warn_path_rules VAR LOG)
     
     if(DEFINED ENFORCE_CONTAINS)
         foreach(FILE ${ENFORCE_CONTAINS})
-            if(NOT EXISTS ${FILE})
+            if(NOT EXISTS "${${VAR}}/${FILE}")
                 list(APPEND ${LOG} "${VAR} is invalid. ${${VAR}}/${FILE} does not exist!")
             endif()
         endforeach()

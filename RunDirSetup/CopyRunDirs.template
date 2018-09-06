@@ -36,7 +36,7 @@
 #
 # %%% Unit tester path names %%%
 #
-   UNIT_TEST_ROOT : ${CMAKE_SOURCE_DIR}/RunDirSetup
+   UNIT_TEST_ROOT : ${CMAKE_CURRENT_SOURCE_DIR}/UT
    RUN_ROOT       : {UTROOT}/runs
    RUN_DIR        : {RUNROOT}/{RUNDIR}
    PERL_DIR       : {UTROOT}/perl

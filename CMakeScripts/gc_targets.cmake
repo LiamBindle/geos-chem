@@ -21,7 +21,7 @@ function(exe_target TARGET SRC_FILES PUBLIC_DEPS)
 
     # Install ${TARGET} to ${CMAKE_INSTALL_PREFIX}
     install(TARGETS ${TARGET}
-        RUNTIME DESTINATION .
+        RUNTIME DESTINATION ${RUNDIR}
     )
 endfunction(exe_target)
 
@@ -52,16 +52,6 @@ function(shared_target TARGET SRC_FILES PUBLIC_DEPS)
     target_link_libraries(${TARGET}
         PUBLIC ${PUBLIC_DEPS}
     )
-
-    # # Install ${TARGET} to ${CMAKE_INSTALL_PREFIX}/lib
-    # install(TARGETS ${TARGET}
-    #     LIBRARY DESTINATION lib
-    # )
-
-    # # Install modules in ./include to ${CMAKE_INSTALL_PREFIX}/include
-    # install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/
-    #     DESTINATION include
-    # )
 endfunction(shared_target)
 
 function(static_target TARGET SRC_FILES PUB_DEPS)
@@ -91,14 +81,4 @@ function(static_target TARGET SRC_FILES PUB_DEPS)
             $<INSTALL_INTERFACE:include>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
     )
-
-    # # Install ${TARGET} to ${CMAKE_INSTALL_PREFIX}/lib
-    # install(TARGETS ${TARGET}
-    #     ARCHIVE DESTINATION lib
-    # )
-
-    # # Install modules in ./include to ${CMAKE_INSTALL_PREFIX}/include
-    # install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/
-    #     DESTINATION include
-    # )
 endfunction(static_target)

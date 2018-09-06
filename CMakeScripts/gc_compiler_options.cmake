@@ -122,7 +122,7 @@ string(SHA1 CFG_HASH "${CFG_SORTED}")
 string(SUBSTRING "${CFG_HASH}" 0 7 CFG_HASH)
 
 # Print the configuration hash
-message(STATUS "Build configuration hash: ${CFG_HASH}")
+message(STATUS "Build configuration hash: ${CFG_HASH}\n")
 
 # Check if the current configuration has been verified
 list(FIND SAFE_CFG_HASHES "${CFG_HASH}" SAFE_IDX)
@@ -133,6 +133,27 @@ endif()
 # Run dir configuration
 message(STATUS "Run directory setup:")
 
+# Get start time
+set_dynamic_default(START 
+    "2016-07-01T00"
+    LOG RUNDIR_LOG
+)
+string(STRIP "${START}" START)
+string(REPLACE " " "" START "${START}")
+string(REPLACE "-" "" START "${START}")
+string(REPLACE "T" "" START "${START}")
+
+# Get end time
+set_dynamic_default(END 
+    "2016-08-01T00"
+    LOG RUNDIR_LOG
+)
+string(STRIP "${END}" END)
+string(REPLACE " " "" END "${END}")
+string(REPLACE "-" "" END "${END}")
+string(REPLACE "T" "" END "${END}")
+
+# Get RUNDIR and EXTDATA
 set_dynamic_default(RUNDIR 
     "<path to run directory>"
     LOG RUNDIR_LOG
@@ -141,25 +162,19 @@ set_dynamic_default(EXTDATA
     "<path to ExtData>"
     LOG RUNDIR_LOG
 )
-set_dynamic_default(START 
-    "2016070100"
-    LOG RUNDIR_LOG
-)
-set_dynamic_default(END 
-    "2016080100"
-    LOG RUNDIR_LOG
-)
-
 dump_log(RUNDIR_LOG)
 
+# Check that RUNDIR and EXTDATA are valid
 set(WARNING_LOG "")
 warn_path_rules(RUNDIR WARNING_LOG
-    EXISTS WRITABLE
+    PARENT EXISTS WRITABLE
 )
 warn_path_rules(EXTDATA WARNING_LOG
     EXISTS
     CONTAINS CHEM_INPUTS HEMCO
 )
+set(INSTALL_RUNDIR "TRUE")
 foreach(WARN ${WARNING_LOG})
     message("Warning: ${WARN}")
+    set(INSTALL_RUNDIR "FALSE")
 endforeach()
