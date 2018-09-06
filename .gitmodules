@@ -1,3 +1,6 @@
 [submodule "GCHP"]
 	path = GCHP
 	url = https://github.com/geoschem/gchp.git
+[submodule "RunDirSetup/UT"]
+	path = RunDirSetup/UT
+	url = https://github.com/geoschem/geos-chem-unittest.git

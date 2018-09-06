@@ -130,3 +130,36 @@ if(${SAFE_IDX} EQUAL -1)
     message(WARNING "This build configuration, ${CFG_HASH}, has not been validated. Proceed with caution.")
 endif()
 
+# Run dir configuration
+message(STATUS "Run directory setup:")
+
+set_dynamic_default(RUNDIR 
+    "<path to run directory>"
+    LOG RUNDIR_LOG
+)
+set_dynamic_default(EXTDATA 
+    "<path to ExtData>"
+    LOG RUNDIR_LOG
+)
+set_dynamic_default(START 
+    "2016070100"
+    LOG RUNDIR_LOG
+)
+set_dynamic_default(END 
+    "2016080100"
+    LOG RUNDIR_LOG
+)
+
+dump_log(RUNDIR_LOG)
+
+set(WARNING_LOG "")
+warn_path_rules(RUNDIR WARNING_LOG
+    EXISTS WRITABLE
+)
+warn_path_rules(EXTDATA WARNING_LOG
+    EXISTS
+    CONTAINS CHEM_INPUTS HEMCO
+)
+foreach(WARN ${WARNING_LOG})
+    message("Warning: ${WARN}")
+endforeach()

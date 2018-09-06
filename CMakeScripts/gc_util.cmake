@@ -1,41 +1,3 @@
-function(set_dynamic_default VAR)
-    cmake_parse_arguments(SDD
-        ""
-        "LOG"
-        ""
-        ${ARGN}
-    )
-
-    # Set flag indicating if ${VAR} can be set
-    if(NOT DEFINED ${VAR} AND NOT DEFINED ${VAR}_IS_MUTABLE)
-        set(${VAR}_IS_MUTABLE "true")
-        set(${VAR}_IS_MUTABLE "true" PARENT_SCOPE)
-    endif()
-
-    # If ${VAR} is mutable, export it
-    if(${${VAR}_IS_MUTABLE})
-        set(${VAR} ${${VAR}} ${SDD_UNPARSED_ARGUMENTS})
-        set(${VAR} ${${VAR}} PARENT_SCOPE)
-    endif()
-
-    # Log if requested
-    if(DEFINED SDD_LOG)
-        set(STR "${${VAR}}")
-
-        # Split list with "  
-        stringify_list(STR 
-            JOIN "  " 
-            LINE_LENGTH 60
-        )
-        # Wrap lines
-        stringify_list(STR 
-            JOIN "  + ${VAR}:\t" "\n  ...       \t"
-        )
-        list(APPEND ${SDD_LOG} "${STR}")
-        set(${SDD_LOG} ${${SDD_LOG}} PARENT_SCOPE)
-    endif()
-endfunction()
-
 function(stringify_list LIST)
     cmake_parse_arguments(BETTER
         "PRINT;AFTER" 
@@ -109,11 +71,91 @@ function(stringify_list LIST)
 endfunction()
 
 macro(dump_log LOG)
-    stringify_list(${LOG} 
-        JOIN "\n" AFTER
-        PRINT
-    )
+    if(DEFINED ${LOG})
+        stringify_list(${LOG} 
+            JOIN "\n" AFTER
+            PRINT
+        )
+    endif()
 endmacro()
+
+function(warn_path_rules VAR LOG)
+    cmake_parse_arguments(ENFORCE
+        "EXISTS;WRITABLE"
+        ""
+        "CONTAINS"
+        ${ARGN}
+    )
+
+    # Make sure the path is absolute
+    if(NOT IS_ABSOLUTE "${${VAR}}")
+        set(${VAR} "${CMAKE_BINARY_DIR}/${${VAR}}")
+        set(${VAR} "${${VAR}}" PARENT_SCOPE)
+    endif()
+
+    # Enforce path rules
+    if(${ENFORCE_EXISTS})
+        if(NOT EXISTS ${${VAR}})
+            list(APPEND ${LOG} "${VAR} is invalid. ${${VAR}} does not exist!")
+        endif()
+    endif()
+
+    if(${ENFORCE_WRITABLE})
+        execute_process(COMMAND test -w ${${VAR}}
+            RESULT_VARIABLE RC
+        )
+        if(${RC})
+            list(APPEND ${LOG} "${VAR} is invalid. ${${VAR}} is not writable!")
+        endif()
+    endif()
+    
+    if(DEFINED ENFORCE_CONTAINS)
+        foreach(FILE ${ENFORCE_CONTAINS})
+            if(NOT EXISTS ${FILE})
+                list(APPEND ${LOG} "${VAR} is invalid. ${${VAR}}/${FILE} does not exist!")
+            endif()
+        endforeach()
+    endif()
+    set(${LOG} "${${LOG}}" PARENT_SCOPE)
+endfunction()
+
+function(set_dynamic_default VAR)
+    cmake_parse_arguments(SDD
+        ""
+        "LOG"
+        ""
+        ${ARGN}
+    )
+
+    # Set flag indicating if ${VAR} can be set
+    if(NOT DEFINED ${VAR} AND NOT DEFINED ${VAR}_IS_MUTABLE)
+        set(${VAR}_IS_MUTABLE "true")
+        set(${VAR}_IS_MUTABLE "true" PARENT_SCOPE)
+    endif()
+
+    # If ${VAR} is mutable, export it
+    if(${${VAR}_IS_MUTABLE})
+        set(${VAR} ${${VAR}} ${SDD_UNPARSED_ARGUMENTS})
+        set(${VAR} ${${VAR}} PARENT_SCOPE)
+    endif()
+
+    # Log if requested
+    if(DEFINED SDD_LOG)
+        set(STR "${${VAR}}")
+
+        # Split list with "  
+        stringify_list(STR 
+            JOIN "  " 
+            LINE_LENGTH 60
+        )
+        # Wrap lines
+        stringify_list(STR 
+            JOIN "  + ${VAR}:\t" "\n  ...       \t"
+        )
+        list(APPEND ${SDD_LOG} "${STR}")
+        set(${SDD_LOG} ${${SDD_LOG}} PARENT_SCOPE)
+    endif()
+endfunction()
 
 
 function(set_dynamic_option VAR)
