@@ -9,7 +9,7 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
-container: docker_gc:latest
+container: zhuangjw/docker_gc:latest
 
 steps:
 - script: nc-config --version
