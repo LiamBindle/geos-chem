@@ -11,15 +11,18 @@ pool:
 
 strategy:
   matrix:
-    container1:
-      containerImage: zhuangjw/docker_gc:latest
-    container2:
-      containerImage: zhuangjw/docker_gc:latest
+    gcc6:
+      containerImage: gcc:6
+    gcc7:
+      containerImage: gcc:7
+    gcc8:
+      containerImage: gcc:8
 
 container: $[ variables['containerImage'] ]
 
 steps:
 - script: |
+    gfortran --version
     mkdir build
     cd build
     cmake -DRUNDIR=IGNORE -DRUNDIR_SIM=standard $(Build.Repository.LocalPath)
