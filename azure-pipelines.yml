@@ -9,13 +9,20 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
-container: zhuangjw/docker_gc:latest
+strategy:
+  matrix:
+    container1:
+      containerImage: zhuangjw/docker_gc:latest
+    container2:
+      containerImage: zhuangjw/docker_gc:latest
+
+container: $[ variables['containerImage'] ]
 
 steps:
-- script: nc-config --version
-  displayName: 'Run a one-line script'
-
 - script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+    mkdir build
+    cd build
+    cmake -DRUNDIR=IGNORE -DRUNDIR_SIM=standard $(Build.Repository.LocalPath)
+    make -j
+    make install
+  displayName: 'Building GEOS-Chem'
