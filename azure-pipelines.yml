@@ -11,6 +11,10 @@ pool:
 
 strategy:
   matrix:
+    gcc4:
+      containerImage: gcc:4
+    gcc5:
+      containerImage: gcc:5
     gcc6:
       containerImage: gcc:6
     gcc7:
