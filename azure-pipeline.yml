@@ -62,7 +62,7 @@ steps:
     rm -rf build
     mkdir build
     cd build
-    cmake -DRUNDIR=IGNORE -DRUNDIR_SIM=complexSOA_SVPOA -DAPM=ON $(Build.Repository.LocalPath)
+    cmake -DRUNDIR=IGNORE -DRUNDIR_SIM=complexSOA_SVPOA -DAPM=ON   $(Build.Repository.LocalPath)
     make -j
     make install
   displayName: 'Building GEOS-Chem'
