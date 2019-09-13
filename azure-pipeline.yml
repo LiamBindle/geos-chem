@@ -4,10 +4,29 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
+variables:
+  ZLIB_COMMON:        1.2.11
+  HDF5_COMMON:        1.10.5
+  NETCDF_C_NEW:       4.7.1
+  NETCDF_FORTRAN_NEW: 4.4.5
+  NETCDF_C_OLD:       4.1.3
+
 strategy:
   matrix:
+    gcc4:
+      containerImage: "liambindle/gcc-netcdf-c-netcdf-fortran:4-$(NETCDF_C_NEW)-$(NETCDF_FORTRAN_NEW)"
+    gcc5:
+      containerImage: "liambindle/gcc-netcdf-c-netcdf-fortran:5-$(NETCDF_C_NEW)-$(NETCDF_FORTRAN_NEW)"
     gcc6:
-      containerImage: "liambindle/gcc-netcdf-c-netcdf-fortran:6-4.7.1-4.4.5"
+      containerImage: "liambindle/gcc-netcdf-c-netcdf-fortran:6-$(NETCDF_C_NEW)-$(NETCDF_FORTRAN_NEW)"
+    gcc7:
+      containerImage: "liambindle/gcc-netcdf-c-netcdf-fortran:7-$(NETCDF_C_NEW)-$(NETCDF_FORTRAN_NEW)"
+    gcc8:
+      containerImage: "liambindle/gcc-netcdf-c-netcdf-fortran:8-$(NETCDF_C_NEW)-$(NETCDF_FORTRAN_NEW)"
+    gcc9:
+      containerImage: "liambindle/gcc-netcdf-c-netcdf-fortran:9-$(NETCDF_C_NEW)-$(NETCDF_FORTRAN_NEW)"
+    gcc7-old-netcdf:
+      containerImage: "liambindle/gcc-netcdf-c-netcdf-fortran:7-4.1.2-none"
 
 container: $[ variables['containerImage'] ]
 
