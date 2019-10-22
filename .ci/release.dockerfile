@@ -5,8 +5,7 @@ FROM liambindle/penelope:0.1.0-ubuntu16.04-gcc7-netcdf4.5.0-netcdff4.4.4
 RUN mkdir /opt/geos-chem && mkdir /opt/geos-chem/bin
 
 # Make build directory
-ARG GC_SRC
-COPY ${GC_SRC} /gc-src
+COPY . /gc-src
 RUN cd /gc-src \
 &&  mkdir build
 
