@@ -27,11 +27,11 @@ steps:
       buildContext: $(Build.Repository.LocalPath)
       Dockerfile: .ci/release.dockerfile
       repository: liambindle/geos-chem
-      tags: $(Build.SourceVersion)
+      tags: $(	Build.SourceBranchName)
   - task: Docker@2
     displayName: Push image
     inputs:
       containerRegistry: DockerHub
       repository: liambindle/geos-chem
       command: push
-      tags: $(Build.SourceVersion)
+      tags: $(Build.SourceBranchName)
