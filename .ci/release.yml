@@ -26,7 +26,7 @@ steps:
       command: build
       Dockerfile: .ci/release.dockerfile
       repository: liambindle/geos-chem
-      tags: $(Build.Repository.ID)
+      tags: $(Build.SourceVersion)
       arguments: |
         --build-arg GC_SRC=$(Build.Repository.LocalPath)
   - task: Docker@2
@@ -35,4 +35,4 @@ steps:
       containerRegistry: DockerHub
       repository: liambindle/geos-chem
       command: push
-      tags: $(Build.Repository.ID)
+      tags: $(Build.SourceVersion)
