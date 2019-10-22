@@ -11,12 +11,11 @@
 !\\
 ! !INTERFACE:
 !
-      SUBROUTINE CLEANUP( am_I_Root, ERROR, RC )
+      SUBROUTINE CLEANUP( am_I_Root, State_Grid, ERROR, RC )
 !
 ! !USES:
 !
       USE AEROSOL_MOD,             ONLY : CLEANUP_AEROSOL
-      USE C2H6_MOD,                ONLY : CLEANUP_C2H6
       USE CARBON_MOD,              ONLY : CLEANUP_CARBON
       USE CO2_MOD,                 ONLY : CLEANUP_CO2
       USE CMN_FJX_Mod,             ONLY : Cleanup_CMN_FJX
@@ -40,7 +39,6 @@
       USE FLEXCHEM_MOD,            ONLY : CLEANUP_FLEXCHEM
       USE GLOBAL_Br_MOD,           ONLY : CLEANUP_GLOBAL_Br
       USE GLOBAL_CH4_MOD,          ONLY : CLEANUP_GLOBAL_CH4
-      USE GC_GRID_MOD,             ONLY : CLEANUP_GRID
       USE GEOS_TIMERS_MOD
       USE Grid_Registry_Mod,       ONLY : Cleanup_Grid_Registry
       USE HDF_MOD,                 ONLY : CLEANUP_HDF
@@ -61,6 +59,7 @@
       USE SEASALT_MOD,             ONLY : CLEANUP_SEASALT
       USE Set_Global_CH4_Mod,      ONLY : Cleanup_Set_Global_CH4
       USE SULFATE_MOD,             ONLY : CLEANUP_SULFATE
+      USE State_Grid_Mod,          ONLY : GrdState
       USE STRAT_CHEM_MOD,          ONLY : CLEANUP_STRAT_CHEM
       USE TAGGED_CO_MOD,           ONLY : CLEANUP_TAGGED_CO
 #if   defined( TOMAS )
@@ -88,12 +87,13 @@
 !
 ! !INPUT PARAMETERS: 
 !
-      LOGICAL, INTENT(IN)  :: am_I_Root   ! Are we on the root CPU?
-      LOGICAL, INTENT(IN)  :: ERROR       ! Cleanup after error? 
+      LOGICAL,        INTENT(IN)  :: am_I_Root    ! Are we on the root CPU?
+      LOGICAL,        INTENT(IN)  :: ERROR        ! Cleanup after error? 
+      TYPE(GrdState), INTENT(IN)  :: State_Grid   ! Grid state object
 !
 ! !OUTPUT PARAMETERS:
 !
-      INTEGER, INTENT(OUT) :: RC          ! Success or failure
+      INTEGER,        INTENT(OUT) :: RC           ! Success or failure
 !
 ! !REVISION HISTORY: 
 !  29 Nov 1999 - R. Yantosca - Initial version
@@ -303,7 +303,6 @@
 
       ! Call cleanup routines from individual F90 modules
       CALL CLEANUP_AEROSOL()
-      CALL CLEANUP_C2H6()
       CALL CLEANUP_CARBON()
       CALL CLEANUP_CO2()
 #if defined( BPCH_DIAG )
@@ -337,13 +336,6 @@
       CALL Cleanup_Global_CH4( am_I_Root, RC )
       IF ( RC /= GC_SUCCESS ) THEN
          ErrMsg = 'Error encountered in "Cleanup_Global_CH4"!'
-         CALL GC_Error( ErrMsg, RC, ThisLoc )
-         RETURN
-      ENDIF
-
-      CALL CLEANUP_GRID( am_I_Root, RC )
-      IF ( RC /= GC_SUCCESS ) THEN
-         ErrMsg = 'Error encountered in "Cleanup_Grid"!'
          CALL GC_Error( ErrMsg, RC, ThisLoc )
          RETURN
       ENDIF
@@ -403,11 +395,11 @@
       ENDIF
 #endif
 
-#if   defined( GRID05x0625 ) || defined( GRID025x03125)
-      CALL EXIT_TPCORE_WINDOW() 
-#else
-      CALL EXIT_TPCORE()
-#endif
+      IF ( State_Grid%NestedGrid ) THEN
+         CALL EXIT_TPCORE_WINDOW() 
+      ELSE
+         CALL EXIT_TPCORE()
+      ENDIF
 
       ! Cleanup Tagged CO code
       CALL CLEANUP_TAGGED_CO( am_I_Root, RC )
