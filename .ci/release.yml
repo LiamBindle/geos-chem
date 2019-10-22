@@ -24,10 +24,10 @@ steps:
     displayName: Build image
     inputs:
       command: build
-      Dockerfile: ci-release.dockerfile
+      Dockerfile: .ci/release.dockerfile
       repository: liambindle/geos-chem
       tags: |
-        latest
+        latest $(Build.Repository.ID)
       arguments: |
         --build-arg GC_SRC=$(Build.Repository.LocalPath)
   - task: Docker@2
@@ -37,4 +37,4 @@ steps:
       repository: liambindle/geos-chem
       command: push
       tags: |
-        latest
+        latest $(Build.Repository.ID)
