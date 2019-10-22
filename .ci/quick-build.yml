@@ -1,0 +1,24 @@
+trigger:
+  branches:
+    include:
+      - dev/*
+      - bugfix/*
+  pr:
+    include:
+      - '*'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+container: liambindle/penelope:ubuntu16.04-gcc7-netcdf4.5.0-netcdff4.4.4
+
+steps:
+- script: |
+    source /init.rc
+    spack load gcc@7 hdf5 netcdf netcdf-fortran
+    mkdir build
+    cd build
+    cmake -DRUNDIR=IGNORE -DRUNDIR_SIM=standard $(Build.Repository.LocalPath)
+    make -j
+    make install
+  displayName: 'Building GEOS-Chem'
