@@ -13,27 +13,27 @@ pool:
 strategy:
   matrix:
     ubuntu_gcc4:
-      containerImage: liambindle/penelope:ubuntu16.04-gcc4-netcdf4.5.0-netcdff4.4.4
+      containerImage: liambindle/penelope:0.1.0-ubuntu16.04-gcc4-netcdf4.5.0-netcdff4.4.4
     ubuntu_gcc5:
-      containerImage: liambindle/penelope:ubuntu16.04-gcc5-netcdf4.5.0-netcdff4.4.4
+      containerImage: liambindle/penelope:0.1.0-ubuntu16.04-gcc5-netcdf4.5.0-netcdff4.4.4
     ubuntu_gcc6:
-      containerImage: liambindle/penelope:ubuntu16.04-gcc6-netcdf4.5.0-netcdff4.4.4
+      containerImage: liambindle/penelope:0.1.0-ubuntu16.04-gcc6-netcdf4.5.0-netcdff4.4.4
     ubuntu_gcc7:
-      containerImage: liambindle/penelope:ubuntu16.04-gcc7-netcdf4.5.0-netcdff4.4.4
+      containerImage: liambindle/penelope:0.1.0-ubuntu16.04-gcc7-netcdf4.5.0-netcdff4.4.4
     ubuntu_gcc8:
-      containerImage: liambindle/penelope:ubuntu16.04-gcc8-netcdf4.5.0-netcdff4.4.4
+      containerImage: liambindle/penelope:0.1.0-ubuntu16.04-gcc8-netcdf4.5.0-netcdff4.4.4
     ubuntu_gcc9:
-      containerImage: liambindle/penelope:ubuntu16.04-gcc9-netcdf4.5.0-netcdff4.4.4
+      containerImage: liambindle/penelope:0.1.0-ubuntu16.04-gcc9-netcdf4.5.0-netcdff4.4.4
     ubuntu_netcdf_new:
-      containerImage: liambindle/penelope:ubuntu16.04-netcdf4.7.1-netcdff4.5.2
+      containerImage: liambindle/penelope:0.1.0-ubuntu16.04-netcdf4.7.1-netcdff4.5.2
     ubuntu_netcdf_old:
-      containerImage: liambindle/penelope:ubuntu16.04-netcdf4.1.3
+      containerImage: liambindle/penelope:0.1.0-ubuntu16.04-netcdf4.1.3
     centos_gcc4:
-      containerImage: liambindle/penelope:centos7-gcc4-netcdf4.5.0-netcdff4.4.4
+      containerImage: liambindle/penelope:0.1.0-centos7-gcc4-netcdf4.5.0-netcdff4.4.4
     centos_gcc7:
-      containerImage: liambindle/penelope:centos7-gcc7-netcdf4.5.0-netcdff4.4.4
+      containerImage: liambindle/penelope:0.1.0-centos7-gcc7-netcdf4.5.0-netcdff4.4.4
     centos_gcc8:
-      containerImage: liambindle/penelope:centos7-gcc8-netcdf4.5.0-netcdff4.4.4
+      containerImage: liambindle/penelope:0.1.0-centos7-gcc8-netcdf4.5.0-netcdff4.4.4
 
 container: $[ variables['containerImage'] ]
 
