@@ -15,7 +15,7 @@ container: liambindle/penelope:0.1.0-ubuntu16.04-gcc7-netcdf4.5.0-netcdff4.4.4
 
 steps:
 - script: |
-    spack load gcc@7 
+    module load gcc/7 
     spack load hdf5 
     spack load netcdf 
     spack load netcdf-fortran
