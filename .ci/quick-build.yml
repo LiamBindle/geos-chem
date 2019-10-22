@@ -3,7 +3,8 @@ trigger:
     include:
       - dev/*
       - bugfix/*
-  pr:
+pr:
+  branches:
     include:
       - '*'
 
