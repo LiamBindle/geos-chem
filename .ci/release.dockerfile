@@ -15,7 +15,8 @@ RUN echo "module load gcc/7" >> /init.rc \
 &&  echo "spack load hdf5" >> /init.rc \
 &&  echo "spack load netcdf" >> /init.rc \
 &&  echo "spack load netcdf-fortran" >> /init.rc \
-&&  echo "export PATH=$PATH:/opt/geos-chem/bin" >> /init.rc
+&&  echo "export PATH=$PATH:/opt/geos-chem/bin" >> /init.rc \
+&&  echo "source /init.rc >> /etc/bash.bashrc"
 
 # Build Standard
 RUN cd /gc-src/build \
@@ -35,7 +36,7 @@ RUN cd /gc-src/build \
 RUN cd /gc-src/build \
 &&  cmake -DRUNDIR=IGNORE -DRUNDIR_SIM=complexSOA_SVPOA .. \
 &&  make -j install \
-&&  cp geos /opt/geos-chem/bin/geos-chem-tropchem \
+&&  cp geos /opt/geos-chem/bin/geos-chem-soa_svpoa\
 && rm -rf /gc-src/build/*
 
 RUN rm -rf /gc-src
