@@ -41,7 +41,7 @@ steps:
     inputs:
       command: build
       buildContext: $(Build.Repository.LocalPath)   # The path to the source code repo
-      Dockerfile: .ci-pipelines/release.dockerfile
+      Dockerfile: .ci/release.dockerfile
       repository: liambindle/geos-chem                # Docker Hub repository 
       tags: $(VERSION_TAG)               # Source code repo's tag
   - task: Docker@2
