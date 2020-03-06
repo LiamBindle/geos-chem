@@ -72,6 +72,8 @@
   Z0                 |     1	   | xy  |   |    |   |   |	|      | 
   PS1                |     1	   | xy  | E |    |   |   |	|      | 
   PS2                |     1	   | xy  | E |    |   |   |	|      | 
+  PS10               |     1	   | xy  | E |    |   |   |	|      | 
+  PS20               |     1	   | xy  | E |    |   |   |	|      | 
   OPTDEP             |     1	   | xyz | C |    |   |   |	|      | 
   CLDF               |     1	   | xyz | C |    |   |   |	|      | 
   QI                 |     1	   | xyz | C |    |   |   |	|      | 
@@ -96,6 +98,10 @@
   TMPU1              |     1	   | xyz | C |    |   |   |	|      | 
   SPHU2              |     1	   | xyz | C |    |   |   |	|      | 
   TMPU2              |     1	   | xyz | C |    |   |   |	|      | 
+  SPHU10             |     1	   | xyz | C |    |   |   |	|      | 
+  TMPU10             |     1	   | xyz | C |    |   |   |	|      | 
+  SPHU20             |     1	   | xyz | C |    |   |   |	|      | 
+  TMPU20             |     1	   | xyz | C |    |   |   |	|      | 
   FLASH_DENS         |     1       | xy  |   |    |   |   |     |      | lightning_flash_density
   CONV_DEPTH         |     1       | xy  |   |    |   |   |     |      | convective_cloud_depth
   XLAIMULTI          | cm2_cm-2    | xyz | E |    |   |   |	|      | LAI_by_type 

@@ -92,6 +92,12 @@ MODULE State_Met_Mod
                                                 !  start of timestep [hPa]
      REAL(fp), POINTER :: PS2_WET       (:,:  ) ! Wet surface pressure at
                                                 !  end of timestep [hPa]
+
+     REAL(fp), POINTER :: PS1       (:,:  )
+     REAL(fp), POINTER :: PS2       (:,:  )
+     REAL(fp), POINTER :: PS10       (:,:  )
+     REAL(fp), POINTER :: PS20       (:,:  )
+
      REAL(fp), POINTER :: PSC2_WET      (:,:  ) ! Wet interpolated surface
                                                 !  pressure [hPa]
      REAL(fp), POINTER :: PS1_DRY       (:,:  ) ! Dry surface pressure at
@@ -173,6 +179,10 @@ MODULE State_Met_Mod
                                                 !  of timestep [g/kg]
      REAL(fp), POINTER :: SPHU2         (:,:,:) ! Specific humidity at end
                                                 !  of timestep [g/kg]
+     REAL(fp), POINTER :: SPHU10         (:,:,:) ! Specific humidity at start
+         !  of timestep [g/kg]
+     REAL(fp), POINTER :: SPHU20         (:,:,:) ! Specific humidity at end
+         !  of timestep [g/kg]
      REAL(fp), POINTER :: T             (:,:,:) ! Temperature [K]
      REAL(fp), POINTER :: TAUCLI        (:,:,:) ! Opt depth of ice clouds [1]
      REAL(fp), POINTER :: TAUCLW        (:,:,:) ! Opt depth of H2O clouds [1]
@@ -180,6 +190,10 @@ MODULE State_Met_Mod
                                                 !  timestep [K]
      REAL(fp), POINTER :: TMPU2         (:,:,:) ! Temperature at end of
                                                 !  timestep [K]
+     REAL(fp), POINTER :: TMPU10         (:,:,:) ! Temperature at start of
+     !  timestep [K]
+   REAL(fp), POINTER :: TMPU20         (:,:,:) ! Temperature at end of
+      !  timestep [K]
      REAL(fp), POINTER :: U             (:,:,:) ! E/W component of wind [m s-1]
      REAL(fp), POINTER :: UPDVVEL       (:,:,:) ! Updraft vertical velocity
                                                 !  [hPa/s]
@@ -455,9 +469,17 @@ CONTAINS
     State_Met%SPHU           => NULL()
     State_Met%SPHU1          => NULL()
     State_Met%SPHU2          => NULL()
+    State_Met%SPHU10          => NULL()
+    State_Met%SPHU20          => NULL()
+    State_Met%PS1          => NULL()
+    State_Met%PS2          => NULL()
+    State_Met%PS10          => NULL()
+    State_Met%PS20          => NULL()
     State_Met%T              => NULL()
     State_Met%TMPU1          => NULL()
     State_Met%TMPU2          => NULL()
+    State_Met%TMPU10          => NULL()
+    State_Met%TMPU20          => NULL()
     State_Met%TV             => NULL()
     State_Met%TAUCLI         => NULL()
     State_Met%TAUCLW         => NULL()
@@ -1715,6 +1737,72 @@ CONTAINS
     IF ( RC /= GC_SUCCESS ) RETURN
 
     !-------------------------
+    ! SPHU10 [g kg-1]
+    !-------------------------
+    ALLOCATE( State_Met%SPHU10( IM, JM, LM ), STAT=RC )
+    CALL GC_CheckVar( 'State_Met%SPHU10', 0, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+    State_Met%SPHU10 = 0.0_fp
+    CALL Register_MetField( am_I_Root, 'SPHU10', State_Met%SPHU10, &
+                            State_Met, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+
+    !-------------------------
+    ! SPHU20 [g kg-1]
+    !-------------------------
+    ALLOCATE( State_Met%SPHU20( IM, JM, LM ), STAT=RC )
+    CALL GC_CheckVar( 'State_Met%SPHU20', 0, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+    State_Met%SPHU20 = 0.0_fp
+    CALL Register_MetField( am_I_Root, 'SPHU20', State_Met%SPHU20, &
+                            State_Met, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+
+    !-------------------------
+    ! PS1 [g kg-1]
+    !-------------------------
+    ALLOCATE( State_Met%PS1( IM, JM ), STAT=RC )
+    CALL GC_CheckVar( 'State_Met%PS1', 0, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+    State_Met%PS1 = 0.0_fp
+    CALL Register_MetField( am_I_Root, 'PS1', State_Met%PS1, &
+                            State_Met, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+
+    !-------------------------
+    ! PS2 [g kg-1]
+    !-------------------------
+    ALLOCATE( State_Met%PS2( IM, JM ), STAT=RC )
+    CALL GC_CheckVar( 'State_Met%PS2', 0, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+    State_Met%PS2 = 0.0_fp
+    CALL Register_MetField( am_I_Root, 'PS2', State_Met%PS2, &
+                            State_Met, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+
+    !-------------------------
+    ! PS10 [g kg-1]
+    !-------------------------
+    ALLOCATE( State_Met%PS10( IM, JM ), STAT=RC )
+    CALL GC_CheckVar( 'State_Met%PS10', 0, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+    State_Met%PS10 = 0.0_fp
+    CALL Register_MetField( am_I_Root, 'PS10', State_Met%PS10, &
+                            State_Met, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+
+    !-------------------------
+    ! PS20 [g kg-1]
+    !-------------------------
+    ALLOCATE( State_Met%PS20( IM, JM ), STAT=RC )
+    CALL GC_CheckVar( 'State_Met%PS20', 0, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+    State_Met%PS20 = 0.0_fp
+    CALL Register_MetField( am_I_Root, 'PS20', State_Met%PS20, &
+                            State_Met, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+
+    !-------------------------
     ! TMPU1 [K]
     !-------------------------
     ALLOCATE( State_Met%TMPU1( IM, JM, LM ), STAT=RC )
@@ -1733,6 +1821,28 @@ CONTAINS
     IF ( RC /= GC_SUCCESS ) RETURN
     State_Met%TMPU2 = 0.0_fp
     CALL Register_MetField( am_I_Root, 'TMPU2', State_Met%TMPU2, &
+                            State_Met, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+
+    !-------------------------
+    ! TMPU10 [K]
+    !-------------------------
+    ALLOCATE( State_Met%TMPU10( IM, JM, LM ), STAT=RC )
+    CALL GC_CheckVar( 'State_Met%TMPU10', 0, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+    State_Met%TMPU10 = 0.0_fp
+    CALL Register_MetField( am_I_Root, 'TMPU10', State_Met%TMPU10, &
+                            State_Met, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+
+    !-------------------------
+    ! TMPU20 [K]
+    !-------------------------
+    ALLOCATE( State_Met%TMPU20( IM, JM, LM ), STAT=RC )
+    CALL GC_CheckVar( 'State_Met%TMPU20', 0, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+    State_Met%TMPU20 = 0.0_fp
+    CALL Register_MetField( am_I_Root, 'TMPU20', State_Met%TMPU20, &
                             State_Met, RC )
     IF ( RC /= GC_SUCCESS ) RETURN
 
@@ -2879,6 +2989,72 @@ CONTAINS
 #endif
     ENDIF
 
+    IF ( ASSOCIATED( State_Met%SPHU10 ) ) THEN
+#if defined( ESMF_ ) || defined( MODEL_WRF )
+      State_Met%SPHU10 => NULL()
+#else
+      DEALLOCATE( State_Met%SPHU10, STAT=RC  )
+      CALL GC_CheckVar( 'State_Met%SPHU10', 2, RC )
+      IF ( RC /= GC_SUCCESS ) RETURN
+      State_Met%SPHU10 => NULL()
+#endif
+   ENDIF
+
+   IF ( ASSOCIATED( State_Met%SPHU20 ) ) THEN
+#if defined( ESMF_ ) || defined( MODEL_WRF )
+      State_Met%SPHU20 => NULL()
+#else
+      DEALLOCATE( State_Met%SPHU20, STAT=RC  )
+      CALL GC_CheckVar( 'State_Met%SPHU20', 2, RC )
+      IF ( RC /= GC_SUCCESS ) RETURN
+      State_Met%SPHU20 => NULL()
+#endif
+   ENDIF
+
+   IF ( ASSOCIATED( State_Met%PS1 ) ) THEN
+#if defined( ESMF_ ) || defined( MODEL_WRF )
+         State_Met%PS1 => NULL()
+#else
+         DEALLOCATE( State_Met%PS1, STAT=RC  )
+         CALL GC_CheckVar( 'State_Met%PS1', 2, RC )
+         IF ( RC /= GC_SUCCESS ) RETURN
+         State_Met%PS1 => NULL()
+#endif
+      ENDIF
+
+      IF ( ASSOCIATED( State_Met%PS2 ) ) THEN
+#if defined( ESMF_ ) || defined( MODEL_WRF )
+         State_Met%PS2 => NULL()
+#else
+         DEALLOCATE( State_Met%PS2, STAT=RC  )
+         CALL GC_CheckVar( 'State_Met%PS2', 2, RC )
+         IF ( RC /= GC_SUCCESS ) RETURN
+         State_Met%PS2 => NULL()
+#endif
+      ENDIF
+
+      IF ( ASSOCIATED( State_Met%PS10 ) ) THEN
+#if defined( ESMF_ ) || defined( MODEL_WRF )
+      State_Met%PS10 => NULL()
+#else
+      DEALLOCATE( State_Met%PS10, STAT=RC  )
+      CALL GC_CheckVar( 'State_Met%PS10', 2, RC )
+      IF ( RC /= GC_SUCCESS ) RETURN
+      State_Met%PS10 => NULL()
+#endif
+   ENDIF
+
+   IF ( ASSOCIATED( State_Met%PS20 ) ) THEN
+#if defined( ESMF_ ) || defined( MODEL_WRF )
+      State_Met%PS20 => NULL()
+#else
+      DEALLOCATE( State_Met%PS20, STAT=RC  )
+      CALL GC_CheckVar( 'State_Met%PS20', 2, RC )
+      IF ( RC /= GC_SUCCESS ) RETURN
+      State_Met%PS20 => NULL()
+#endif
+   ENDIF
+
     IF ( ASSOCIATED( State_Met%T ) ) THEN
 #if defined( ESMF_ ) || defined( MODEL_WRF )
        State_Met%T => NULL()
@@ -2911,6 +3087,28 @@ CONTAINS
        State_Met%TMPU2 => NULL()
 #endif
     ENDIF
+
+   IF ( ASSOCIATED( State_Met%TMPU10 ) ) THEN
+#if defined( ESMF_ ) || defined( MODEL_WRF )
+         State_Met%TMPU10 => NULL()
+#else
+         DEALLOCATE( State_Met%TMPU10, STAT=RC  )
+         CALL GC_CheckVar( 'State_Met%TMPU10', 2, RC )
+         IF ( RC /= GC_SUCCESS ) RETURN
+         State_Met%TMPU10 => NULL()
+#endif
+      ENDIF
+
+      IF ( ASSOCIATED( State_Met%TMPU20 ) ) THEN
+#if defined( ESMF_ ) || defined( MODEL_WRF )
+         State_Met%TMPU20 => NULL()
+#else
+         DEALLOCATE( State_Met%TMPU20, STAT=RC  )
+         CALL GC_CheckVar( 'State_Met%TMPU20', 2, RC )
+         IF ( RC /= GC_SUCCESS ) RETURN
+         State_Met%TMPU20 => NULL()
+#endif
+      ENDIF
 
     IF ( ASSOCIATED( State_Met%TV ) ) THEN
 #if defined( ESMF_ ) || defined( MODEL_WRF )
@@ -3758,6 +3956,38 @@ CONTAINS
           IF ( isRank  ) Rank  = 3
           IF ( isVLoc  ) VLoc  = VLocationCenter
 
+      CASE ( 'SPHU10' )
+         IF ( isDesc  ) Desc  = 'Raw instantaneous specific humidity at time=T'
+         IF ( isUnits ) Units = 'g kg-1'
+         IF ( isRank  ) Rank  = 3
+         IF ( isVLoc  ) VLoc  = VLocationCenter
+
+      CASE ( 'SPHU20' )
+         IF ( isDesc  ) Desc  = 'Raw instantaneous specific humidity at time=T+dt'
+         IF ( isUnits ) Units = 'g kg-1'
+         IF ( isRank  ) Rank  = 3
+         IF ( isVLoc  ) VLoc  = VLocationCenter
+
+      CASE ( 'PS1' )
+         IF ( isDesc  ) Desc  = 'Surface pressure'
+         IF ( isUnits ) Units = 'hPa'
+         IF ( isRank  ) Rank  = 2
+
+      CASE ( 'PS2' )
+         IF ( isDesc  ) Desc  = 'Surface pressure+dt'
+         IF ( isUnits ) Units = 'hPa'
+         IF ( isRank  ) Rank  = 2
+
+     CASE ( 'PS10' )
+        IF ( isDesc  ) Desc  = 'Raw Surface pressure'
+        IF ( isUnits ) Units = 'hPa'
+        IF ( isRank  ) Rank  = 2
+
+     CASE ( 'PS20' )
+        IF ( isDesc  ) Desc  = 'Raw Surface pressure+dt'
+        IF ( isUnits ) Units = 'hPa'
+        IF ( isRank  ) Rank  = 2
+  
        CASE ( 'T' )
           IF ( isDesc  ) Desc  = 'Temperature'
           IF ( isUnits ) Units = 'K'
@@ -3799,6 +4029,18 @@ CONTAINS
           IF ( isUnits ) Units = 'K'
           IF ( isRank  ) Rank  = 3
           IF ( isVLoc  ) VLoc  = VLocationCenter
+
+      CASE ( 'TMPU10' )
+         IF ( isDesc  ) Desc  = 'Raw instantaneous temperature at time=T'
+         IF ( isUnits ) Units = 'K'
+         IF ( isRank  ) Rank  = 3
+         IF ( isVLoc  ) VLoc  = VLocationCenter
+
+      CASE ( 'TMPU20' )
+         IF ( isDesc  ) Desc  = 'Raw instantaneous temperature at time T+dt'
+         IF ( isUnits ) Units = 'K'
+         IF ( isRank  ) Rank  = 3
+         IF ( isVLoc  ) VLoc  = VLocationCenter
 
        CASE ( 'U' )
           IF ( isDesc  ) Desc  = 'East-west component of wind'
