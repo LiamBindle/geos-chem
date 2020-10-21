@@ -321,8 +321,8 @@ CONTAINS
     prtDebug   = ( Input_Opt%LPRT .and. Input_Opt%amIRoot )
 
     ! Get fields for oceanic O3 drydeposition
-    CALL HCO_GetPtr( HcoState, 'surf_iodide',   HCO_Iodide,   RC )
-    CALL HCO_GetPtr( HcoState, 'surf_salinity', HCO_Salinity, RC )
+    ! CALL HCO_GetPtr( HcoState, 'surf_iodide',   HCO_Iodide,   RC )
+    ! CALL HCO_GetPtr( HcoState, 'surf_salinity', HCO_Salinity, RC )
 
     ! Call METERO to obtain meterological fields (all 1-D arrays)
     ! Added sfc pressure as PRESSU and 10m windspeed as W10
