@@ -17,7 +17,6 @@ MODULE SEASALT_MOD
 !
 ! !USES:
 !
-  USE HCO_ERROR_MOD
   USE PRECISION_MOD    ! For GEOS-Chem Precision (fp)
   USE PHYSCONSTANTS
 
@@ -90,7 +89,7 @@ MODULE SEASALT_MOD
 !
 ! !DEFINED PARAMETERS:
 !
-  INTEGER,  PARAMETER   :: NSALT    = 2
+  INTEGER,  PARAMETER   :: NSALT    = 6
   INTEGER,  PARAMETER   :: NR_MAX   = 200
   REAL(fp), PARAMETER   :: SMALLNUM = 1e-20_fp
 #ifdef APM
@@ -115,6 +114,11 @@ MODULE SEASALT_MOD
   INTEGER               :: id_SALA
   INTEGER               :: id_SALC
   INTEGER               :: id_SS1
+  INTEGER               :: id_SALACL
+  INTEGER               :: id_SALCCL
+  INTEGER               :: id_SALAAL
+  INTEGER               :: id_SALCAL
+
 
 CONTAINS
 !EOC
@@ -214,6 +218,33 @@ CONTAINS
     ENDIF
 
     !=================================================================
+    ! Accumulation mode Chloride wet settling
+    !=================================================================
+    IF ( id_SALACL > 0 ) THEN
+       
+       CALL WET_SETTLING( Input_Opt, State_Chm,              &
+                          State_Diag, State_Grid, State_Met, &
+                          Spc(:,:,:,id_SALACL), 3, RC )
+       
+       IF ( prtDebug ) THEN
+          CALL DEBUG_MSG( '### CHEMSEASALT: WET_SET, Accum Cl' )
+       ENDIF
+    ENDIF
+
+    !=================================================================
+    ! Accumulation mode Alkalinity wet settling
+    !=================================================================
+    IF ( id_SALAAL > 0 ) THEN
+       CALL WET_SETTLING(   Input_Opt, State_Chm,  &
+                          State_Diag, State_Grid, State_Met, &
+                          Spc(:,:,:,id_SALAAL), 5, RC )
+       
+       IF ( prtDebug ) THEN
+          CALL DEBUG_MSG( '### CHEMSEASALT: WET_SET, Accum Al' )
+       ENDIF
+    ENDIF
+
+    !=================================================================
     ! Coarse mode wet settling
     !=================================================================
     IF ( id_SALC > 0 ) THEN
@@ -222,6 +253,32 @@ CONTAINS
 
        IF ( prtDebug ) THEN
           CALL DEBUG_MSG( '### CHEMSEASALT: WET_SET, Coarse' )
+       ENDIF
+    ENDIF
+
+    !=================================================================
+    ! Coarse mode Choloride wet settling
+    !=================================================================
+    IF ( id_SALCCL > 0 ) THEN
+       CALL WET_SETTLING(   Input_Opt, State_Chm,  &
+                          State_Diag, State_Grid, State_Met, &
+                          Spc(:,:,:,id_SALCCL), 4, RC )
+       
+       IF ( prtDebug ) THEN
+          CALL DEBUG_MSG( '### CHEMSEASALT: WET_SET, Coarse Cl' )
+       ENDIF
+    ENDIF
+    
+    !=================================================================
+    ! Coarse mode Alkalinity wet settling
+    !=================================================================
+    IF ( id_SALCAL > 0 ) THEN
+       CALL WET_SETTLING(   Input_Opt, State_Chm,  &
+                          State_Diag, State_Grid, State_Met, &
+                          Spc(:,:,:,id_SALCAL), 6, RC )
+       
+       IF ( prtDebug ) THEN
+          CALL DEBUG_MSG( '### CHEMSEASALT: WET_SET, Coarse Al' )
        ENDIF
     ENDIF
 
@@ -331,7 +388,7 @@ CONTAINS
 ! !LOCAL VARIABLES:
 !
     LOGICAL                  :: PrtDebug
-    INTEGER                  :: I,      J,     L,        ND
+    INTEGER                  :: I,      J,     L,        S
     REAL(fp)                 :: DELZ,   DELZ1, REFF,     DEN
     REAL(fp)                 :: P,      DP,    PDP,      TEMP
     REAL(fp)                 :: CONST,  SLIP,  VISC,     FAC1
@@ -406,13 +463,13 @@ CONTAINS
 
     ! Accum mode
     ! add R0 and R1 = edges if the sea salt size bins (jaegle 5/11/11)
-    CASE( 1 )
+    CASE( 1,3,5 )
        REFF = 0.5e-6_fp * ( SALA_REDGE_um(1) + SALA_REDGE_um(2) )
        R0 = SALA_REDGE_um(1)
        R1 = SALA_REDGE_um(2)
 
     ! Coarse mode
-    CASE( 2 )
+    CASE( 2,4,6 )
        REFF = 0.5e-6_fp * ( SALC_REDGE_um(1) + SALC_REDGE_um(2) )
        R0 = SALC_REDGE_um(1)
        R1 = SALC_REDGE_um(2)
@@ -483,15 +540,15 @@ CONTAINS
     !FAC1 = C1 * ( RUM**C2 )
     !FAC2 = C3 * ( RUM**C4 )
 
-    !$OMP PARALLEL DO        &
-    !$OMP DEFAULT( SHARED )  &
+    !$OMP PARALLEL DO                                                    &
+    !$OMP DEFAULT( SHARED                                              ) &
     !$OMP PRIVATE( I,        J,     L,     VTS,             P          ) &
     !$OMP PRIVATE( TEMP,     RHB,   RWET,  RATIO_R,         RHO        ) &
     !$OMP PRIVATE( DP,       PDP,   CONST, SLIP,            VISC       ) &
     !$OMP PRIVATE( TC0,      DELZ,  DELZ1, TOT1,            TOT2       ) &
     !$OMP PRIVATE( AREA_CM2, FLUX,  ID,    SALT_MASS_TOTAL, VTS_WEIGHT ) &
-    !$OMP PRIVATE( DMIDW,    RHO1,  WTP,   SALT_MASS,       ND         ) &
-    !$OMP SCHEDULE( DYNAMIC )
+    !$OMP PRIVATE( DMIDW,    RHO1,  WTP,   SALT_MASS,       S          ) &
+    !$OMP SCHEDULE( DYNAMIC                                            )
     DO J = 1, State_Grid%NY
     DO I = 1, State_Grid%NX
 
@@ -688,14 +745,14 @@ CONTAINS
           ! Convert sea salt flux from [kg/s] to [molec/cm2/s]
           FLUX     = ( TOT1 - TOT2 ) / DTCHEM
           FLUX     = FLUX * AVO / ( AIRMW / ( AIRMW &
-                     / State_Chm%SpcData(id_SALA)%Info%emMW_g ) &
+                     / State_Chm%SpcData(id_SALA)%Info%MW_g ) &
                      * 1.e-3_fp ) / AREA_CM2
 
-          ! Drydep index
-          ND = IDDEP(N)
-
           ! Drydep flux in chemistry only
-          State_Diag%DryDepChm(I,J,ND) = FLUX
+          S = State_Diag%Map_DryDepChm%id2slot(idDep(N))
+          IF ( S > 0 ) THEN
+             State_Diag%DryDepChm(I,J,S) = FLUX
+          ENDIF
        ENDIF
 
     ENDDO ! I
@@ -999,7 +1056,8 @@ CONTAINS
     RC = GC_SUCCESS
 
     ! Return if we have already allocated arrays
-    IF ( IS_INIT ) RETURN
+    ! or if it is a dry-run simulation
+    IF ( IS_INIT .or. Input_Opt%DryRun ) RETURN
 
     ! Define species indices
     id_MOPI = Ind_('MOPI')
@@ -1008,6 +1066,10 @@ CONTAINS
     id_SALC = Ind_('SALC')
     id_NK1  = Ind_('NK1' )
     id_SS1  = Ind_('SS1' )
+    id_SALACL = Ind_('SALACL')
+    id_SALCCL = Ind_('SALCCL')
+    id_SALAAL = Ind_('SALAAL')
+    id_SALCAL = Ind_('SALCAL')
 
     ! Initialize pointer
     SpcInfo => NULL()
@@ -1032,7 +1094,7 @@ CONTAINS
     IDDEP  = 0
     SS_DEN = 0
 
-    ! Find drydep species in DEPSAV
+    ! Find drydep species
     IF ( Input_Opt%LDRYD ) THEN
 
        ! Loop over all species
@@ -1049,6 +1111,18 @@ CONTAINS
           CASE ( 'SALC' )
              IDDEP(2)  = SpcInfo%DryDepID
              SS_DEN(2) = SpcInfo%Density
+          CASE ( 'SALACL' )
+             IDDEP(3)  = SpcInfo%DryDepID
+             SS_DEN(3) = SpcInfo%Density
+          CASE ( 'SALCCL' )
+             IDDEP(4)  = SpcInfo%DryDepID
+             SS_DEN(4) = SpcInfo%Density
+          CASE ( 'SALAAL' )
+             IDDEP(5)  = SpcInfo%DryDepID
+             SS_DEN(5) = SpcInfo%Density
+          CASE ( 'SALCAL' )
+             IDDEP(6)  = SpcInfo%DryDepID
+             SS_DEN(6) = SpcInfo%Density
           CASE DEFAULT
              ! Nothing
           END SELECT

@@ -39,6 +39,7 @@ MODULE AEROSOL_MOD
   ! OCPO        : Hydrophobic organic carbon aerosol [kg/m3]
   ! OCPISOA     : Hydrophilic OC + SOA aerosol       [kg/m3]
   ! SALA        : Accumulation mode seasalt aerosol  [kg/m3]
+  ! ACL         : Accumulation mode Cl aerosol       [kg/m3]
   ! SALC        : Coarse mode seasalt aerosol        [kg/m3]
   ! SO4_NH4_NIT : Lumped SO4-NH4-NIT aerosol         [kg/m3]
   ! SO4         : Sulfate aerosol                    [kg/m3]
@@ -64,6 +65,7 @@ MODULE AEROSOL_MOD
   REAL(fp), ALLOCATABLE, PUBLIC :: OCPO(:,:,:)
   REAL(fp), ALLOCATABLE, PUBLIC :: OCPISOA(:,:,:)
   REAL(fp), ALLOCATABLE, PUBLIC :: SALA(:,:,:)
+  REAL(fp), ALLOCATABLE, PUBLIC :: ACL(:,:,:)
   REAL(fp), ALLOCATABLE, PUBLIC :: SALC(:,:,:)
   REAL(fp), ALLOCATABLE, PUBLIC :: SO4_NH4_NIT(:,:,:)
   REAL(fp), ALLOCATABLE, PUBLIC :: SO4(:,:,:)
@@ -124,11 +126,11 @@ MODULE AEROSOL_MOD
   INTEGER :: id_BCPI,  id_BCPO,  id_DST1,  id_DST2
   INTEGER :: id_DST3,  id_DST4,  id_NH4,   id_NIT
   INTEGER :: id_OCPO,  id_OCPI,  id_SALA,  id_SALC
-  INTEGER :: id_SO4,   id_SO4s,  id_NITs
+  INTEGER :: id_SO4,   id_SO4s,  id_NITs,  id_NH4s
   INTEGER :: id_POA1,  id_POA2,  id_OPOA1, id_OPOA2
   INTEGER :: id_TSOA1, id_TSOA2, id_TSOA3, id_TSOA0
   INTEGER :: id_ASOAN, id_ASOA1, id_ASOA2, id_ASOA3
-  INTEGER :: id_DUST1, id_SOAS
+  INTEGER :: id_DUST1, id_SOAS,  id_SALACL
   INTEGER :: id_SOAGX, id_SOAIE
   INTEGER :: id_INDIOL,id_LVOCOA
 
@@ -169,12 +171,13 @@ CONTAINS
 !
 ! !USES:
 !
-    USE CMN_FJX_MOD,       ONLY : REAA
+    USE CMN_FJX_MOD,      ONLY : REAA
     USE ErrCode_Mod
     USE ERROR_MOD
-    USE HCO_EMISLIST_MOD,  ONLY : HCO_GetPtr
-    USE HCO_Error_Mod
-    USE HCO_INTERFACE_MOD, ONLY : HcoState
+#if !defined( MODEL_CESM )
+    USE HCO_State_GC_Mod,  ONLY : HcoState
+    USE HCO_Calc_Mod,      ONLY : HCO_EvalFld
+#endif
     USE Input_Opt_Mod,     ONLY : OptInput
     USE State_Chm_Mod,     ONLY : ChmState
     USE State_Diag_Mod,    ONLY : DgnState
@@ -184,7 +187,7 @@ CONTAINS
     USE UnitConv_Mod,      ONLY : Convert_Spc_Units
     USE TIME_MOD,          ONLY : GET_MONTH
 #ifdef TOMAS
-    USE TOMAS_MOD,         ONLY : IBINS
+    USE TOMAS_MOD,        ONLY : IBINS
 #endif
 !
 ! !INPUT PARAMETERS:
@@ -252,7 +255,6 @@ CONTAINS
     CHARACTER(LEN=255)  :: FIELDNAME
     INTEGER             :: MONTH
     LOGICAL             :: FND
-    REAL(f4), POINTER   :: OMOC(:,:) => NULL()
 
     ! For errors
     CHARACTER(LEN=255)  :: ThisLoc
@@ -322,7 +324,7 @@ CONTAINS
     ! or use default global mean values recommended by Aerosols WG
     !=================================================================
 
-    ! Attenot to get pointer to OM/OC for current month from HEMCO
+    ! Get data for OM/OC for current month from HEMCO
     MONTH = GET_MONTH()
     IF      ( MONTH == 12 .or. MONTH == 1  .or. MONTH == 2  ) THEN
        FieldName = 'OMOC_DJF'
@@ -333,14 +335,22 @@ CONTAINS
     ELSE IF ( MONTH == 9  .or. MONTH == 10 .or. MONTH == 11 ) THEN
        FieldName = 'OMOC_SON'
     ENDIF
-    CALL HCO_GetPtr( HcoState, FIELDNAME, OMOC, RC, FOUND=FND )
 
-    IF ( RC == HCO_SUCCESS .AND. FND ) THEN
+
+    IF ( RC /= GC_SUCCESS ) RETURN
+#if !defined( MODEL_CESM )
+    CALL HCO_EvalFld( HcoState, Trim(FieldName), State_Chm%OMOC, RC, FOUND=FND )
+#else
+    FND = .True.
+    RC  = GC_SUCCESS
+#endif
+
+    IF ( RC == GC_SUCCESS .AND. FND ) THEN
 
        ! Set OM/OC using spatially and seasonally varying data from
        ! Philip et al. (2014)
-       OCFPOA(:,:)  = OMOC(:,:) ! OM/OC for POA
-       OCFOPOA(:,:) = OMOC(:,:) ! OM/OC for OPOA, OCPI, and OCPO
+       OCFPOA(:,:)  = State_Chm%OMOC(:,:) ! OM/OC for POA
+       OCFOPOA(:,:) = State_Chm%OMOC(:,:) ! OM/OC for OPOA, OCPI, and OCPO
 
     ELSE
 
@@ -459,9 +469,9 @@ CONTAINS
                 ! 2013)
                 SO4_NH4_NIT(I,J,L) = ( Spc(I,J,L,id_SO4)    + &
                                        Spc(I,J,L,id_NH4)    + &
-                                       Spc(I,J,L,id_NIT)    + &
-                                       Spc(I,J,L,id_SO4s)   + &
-                                       Spc(I,J,L,id_NITs) ) / &
+                                       Spc(I,J,L,id_NIT))   / &
+                                       !Spc(I,J,L,id_SO4s)   + &
+                                       !Spc(I,J,L,id_NITs) ) / &
                                        AIRVOL(I,J,L)
                 SO4(I,J,L) = Spc(I,J,L,id_SO4) / AIRVOL(I,J,L)
                 NH4(I,J,L) = Spc(I,J,L,id_NH4) / AIRVOL(I,J,L)
@@ -493,11 +503,13 @@ CONTAINS
              ! distribution but are currently simply treated in the same
              ! way (size and optics) as all other sulfate aerosol (DAR
              ! 2013)
+             ! With coarse SSA thermodynamcis, including NITs would
+             ! bias nitrate largely, alternatively, SO4s and NITs
+             ! should be considered as a part of sea-salt (XNW Dec 7 2017)
+
              SO4_NH4_NIT(I,J,L) = ( Spc(I,J,L,id_SO4)    + &
                                     Spc(I,J,L,id_NH4)    + &
-                                    Spc(I,J,L,id_NIT)    + &
-                                    Spc(I,J,L,id_SO4s)   + &
-                                    Spc(I,J,L,id_NITs) ) / &
+                                    Spc(I,J,L,id_NIT))   / &
                                     AIRVOL(I,J,L)
              SO4(I,J,L) = Spc(I,J,L,id_SO4) / AIRVOL(I,J,L)
              NH4(I,J,L) = Spc(I,J,L,id_NH4) / AIRVOL(I,J,L)
@@ -510,11 +522,15 @@ CONTAINS
 
              ! Save these fractions for partitioning of optics
              ! until later when these may be treated independently
-             FRAC_SNA(I,J,L,1) = ( ( Spc(I,J,L,id_SO4 ) + Spc(I,J,L,id_SO4s) ) &
-                                 / AIRVOL(I,J,L) ) / SO4_NH4_NIT(I,J,L)
+             FRAC_SNA(I,J,L,1) = ( ( Spc(I,J,L,id_SO4 ) ) &
+!     &                           +     Spc(I,J,L,id_SO4s) )
+                                 /   AIRVOL(I,J,L)         ) &
+                                 / SO4_NH4_NIT(I,J,L)
 
-             FRAC_SNA(I,J,L,2) = ( ( Spc(I,J,L,id_NIT ) + Spc(I,J,L,id_NITs) ) &
-                                 / AIRVOL(I,J,L) ) / SO4_NH4_NIT(I,J,L)
+             FRAC_SNA(I,J,L,2) = ( ( Spc(I,J,L,id_NIT ) ) &
+!     &                           +     Spc(I,J,L,id_NITs) )
+                                 /   AIRVOL(I,J,L)         )&
+                                 / SO4_NH4_NIT(I,J,L)
 
              FRAC_SNA(I,J,L,3) = ( Spc(I,J,L,id_NH4) &
                                  / AIRVOL(I,J,L) ) / SO4_NH4_NIT(I,J,L)
@@ -687,9 +703,14 @@ CONTAINS
           ! Coarse mode seasalt aerosol [kg/m3]
           SALC(I,J,L) = Spc(I,J,L,id_SALC) / AIRVOL(I,J,L)
 
+          ! Fine mode Cl-/sulfate interal mixed [kg/m3]
+          ACL(I,J,L) = ( Spc(I,J,L,id_SALACL) + &
+                         Spc(I,J,L,id_SALA)*0.45e0_fp)/AIRVOL(I,J,L)
+
           ! Avoid division by zero
           SALA(I,J,L) = MAX( SALA(I,J,L), 1e-35_fp )
           SALC(I,J,L) = MAX( SALC(I,J,L), 1e-35_fp )
+          ACL(I,J,L) = MAX( ACL(I,J,L), 1e-35_fp )
 
        ENDIF
 
@@ -887,6 +908,13 @@ CONTAINS
                         TSOA(I,J,L)   * ORG_GROWTH + &
                         ASOA(I,J,L)   * ORG_GROWTH + &
                         ISOAAQ(I,J,L) * ORG_GROWTH    ! Includes SOAGX
+
+          ! Need to add OPOA to PM2.5 for complexSOA_SVPOA simulations
+          ! -- Maggie Marvin (15 Jul 2020)
+          IF ( Is_OPOA ) THEN
+             PM25(I,J,L) = PM25(I,J,L)             + &
+                           OPOA(I,J,L) * ORG_GROWTH
+          ENDIF
        ENDIF
 
        ! Apply STP correction factor based on ideal gas law
@@ -942,7 +970,7 @@ CONTAINS
 
        ! PM2.5 sea salt
        IF ( State_Diag%Archive_PM25ss  ) THEN
-          State_Diag%PM25ss(I,J,L) = ( SALA(I,J,L) * ORG_GROWTH  ) &
+          State_Diag%PM25ss(I,J,L) = ( SALA(I,J,L) * SSA_GROWTH  ) &
                                    * ( 1013.25_fp  / PMID(I,J,L) ) &
                                    * ( T(I,J,L)    / 298.0_fp    ) &
                                    * 1.0e+9_fp
@@ -977,7 +1005,6 @@ CONTAINS
     ! Free pointers
     Spc    => NULL()
     AIRVOL => NULL()
-    OMOC   => NULL()
 
   END SUBROUTINE AEROSOL_CONC
 !EOC
@@ -1055,8 +1082,8 @@ CONTAINS
     LOGICAL             :: FIRST = .TRUE.
     LOGICAL             :: LINTERP
     CHARACTER(LEN=16)   :: STAMP
-    INTEGER             :: I, J, L, N, R, IRH, W, IRHN
-    INTEGER             :: AA, IWV, IIWV, NWVS, IR, NRT
+    INTEGER             :: I, J, L, N, R, IRH, W, IRHN, NA, SpcID
+    INTEGER             :: AA, IWV, IIWV, NWVS, IR, NRT, S
     REAL*4              :: TEMP( State_Grid%NX,State_Grid%NY,State_Grid%NZ)
     REAL(fp)            :: TEMP2(State_Grid%NX,State_Grid%NY,State_Grid%NZ)
     REAL(fp)            :: MSDENS(NAER), DRYAREA, VDRY, VH2O
@@ -1140,6 +1167,8 @@ CONTAINS
     REAL(fp), POINTER   :: TAREA(:,:,:,:)
     REAL(fp), POINTER   :: WERADIUS(:,:,:,:)
     REAL(fp), POINTER   :: WTAREA(:,:,:,:)
+    REAL(fp), POINTER   :: ACLRADIUS(:,:,:)
+    REAL(fp), POINTER   :: ACLAREA(:,:,:)
 
     ! For diagnostics
     LOGICAL                :: IsWL1
@@ -1184,37 +1213,41 @@ CONTAINS
     TAREA               => State_Chm%AeroArea    ! Aerosol Area [cm2/cm3]
     WERADIUS            => State_Chm%WetAeroRadi ! Wet Aerosol Radius [cm]
     WTAREA              => State_Chm%WetAeroArea ! Wet Aerosol Area [cm2/cm3]
+    ACLRADIUS           => State_Chm%AClRadi     ! Fine Cl- Radius [cm]
+    ACLAREA             => State_Chm%AClArea     ! Fine Cl- Area [cm2/cm3]
 
     ! Initialize the mapping between hygroscopic species in the
     ! species database and the species order in NRHAER
     IF ( FIRST ) THEN
-       DO I = 1, NRHAER
+       DO N = 1, NRHAER
 
           ! Get the species database index from the species database
           ! mapping array for hygroscopic growth species
-          N  = State_Chm%Map_HygGrth(I)
+          SpcID = State_Chm%Map_HygGrth(N)
 
           ! Point to the Species Database entry for species N
-          SpcInfo => State_Chm%SpcData(N)%Info
+          SpcInfo => State_Chm%SpcData(SpcID)%Info
 
-          ! Set the mapping to the local ordering of aerosol densities
-          ! in RDAER
+          ! Set the mapping to the ordering of aerosol densities in RD_AOD
           SELECT CASE ( TRIM(SpcInfo%Name) )
           CASE ( 'SO4' )
-             Map_NRHAER(I) = 1
+             Map_NRHAER(N) = 1
           CASE ( 'BCPI' )
-             Map_NRHAER(I) = 2
+             Map_NRHAER(N) = 2
           CASE ( 'OCPI', 'POA1' )
-             Map_NRHAER(I) = 3
+             Map_NRHAER(N) = 3
           CASE ( 'SALA' )
-             Map_NRHAER(I) = 4
+             Map_NRHAER(N) = 4
           CASE ( 'SALC' )
-             Map_NRHAER(I) = 5
+             Map_NRHAER(N) = 5
           CASE DEFAULT
              ErrMsg = 'WARNING: aerosol diagnostics not defined' // &
                       ' for NRHAER greater than 5!'
              CALL GC_ERROR( ErrMsg, RC, 'RDAER in aerosol_mod.F90' )
           END SELECT
+
+          ! Free pointer
+          SpcInfo => NULL()
 
        ENDDO
     ENDIF
@@ -1451,7 +1484,14 @@ CONTAINS
 
        ! Loop over types of aerosol with hygroscopic growth
        ! (this will include strat aerosol when using UCX)
-       DO N = 1, NAER
+       DO NA = 1, NAER
+
+          ! Get ID following ordering of aerosol densities in RD_AOD
+          IF ( NA <= NRHAER) THEN
+             N = Map_NRHAER(NA)
+          ELSE
+             N = NA
+          ENDIF
 
           !index for strat aerosol (only >0 for strat aero)
           ISTRAT=N-NRHAER
@@ -1519,7 +1559,7 @@ CONTAINS
           !$OMP PRIVATE( IR                                               ) &
 #endif
           !$OMP PRIVATE( RHOSTRAT, RAER,    SADSTRAT, XSASTRAT            ) &
-          !$OMP PRIVATE( VDRY,     VH2O                                   ) &
+          !$OMP PRIVATE( VDRY,     VH2O,    S                             ) &
           !$OMP SCHEDULE( DYNAMIC )
           DO L = 1, State_Grid%NZ
           DO J = 1, State_Grid%NY
@@ -1726,7 +1766,10 @@ CONTAINS
                 IF ( State_Diag%Archive_AerHygGrowth .AND. &
                      L <= State_Grid%MaxChemLev      .AND. &
                      ODSWITCH.EQ.1 ) THEN
-                   State_Diag%AerHygGrowth(I,J,L,Map_NRHAER(N)) = SCALEOD
+                   S = State_Diag%Map_AerHygGrowth%id2slot(NA)
+                   IF ( S > 0 ) THEN
+                      State_Diag%AerHygGrowth(I,J,L,S) = SCALEOD
+                   ENDIF
                 ENDIF
 
                 !=======================================================
@@ -1761,44 +1804,6 @@ CONTAINS
                 ! Wet dust WTAREA and WERADIUS are archived in dust_mod.F90.
                 !========================================================
 
-                ! For SO4-NIT-NH4 aerosol, re-calculate the wet effective
-                ! radius using the water content from ISORROPIA.
-                ! This new effective radius will be used for surface area
-                ! used in heterogeneous chemistry. We don't use this
-                ! effective radius in the optics above (OD, scattering,
-                ! absorption) because the index of refraction, phase
-                ! function, and Q must all be consistent with the radius and
-                ! composition.
-                ! Note: ISORROPIA water includes fine sea salt aerosol,
-                ! which we are assigning all to SNA here without decreasing
-                ! the sea salt volume. This double counts the fine SSA
-                ! volume. (cdholmes, 5/17/2019)
-                IF (N == 1) THEN
-
-                   ! Volume of water, m3(H2O)/m3(air)
-                   ! AeroH2O has units g/m3
-                   VH2O = State_Chm%AeroH2O(I,J,L,NDUST+1) / 1e6
-                   ! Volume of dry aerosol, m3(aerosol)/m3(air)
-                   VDry = WAERSL(I,J,L,N) / MSDENS(N)
-
-                   ! Notes on REFF derivation
-                   ! Volume of wet aerosol: VWet = VDry + VH2O [note:
-                   ! this is incorrect but has the correct limits for
-                   ! VH2O/VDry << 1 and VH2O/VDry >> 1. It would be
-                   ! better to use an empirical function for density.]
-                   ! Volume of one dry particle v1dry = 4/3*pi*RDry**3
-                   ! [note: RW(1) = RDry]
-                   ! Number of aerosol particles: n = VDry / v1dry
-                   ! Volume of wet aerosol is also: VWet = 4/3*pi * RWet**3 * n
-                   ! So RWet = ( 3*VWet / (4 pi n) )**(1/3)
-                   ! RWet = RDry * ( 1 + VH2O/Vdry )**(1/3)
-
-                   ! Wet effective radius, um
-                   REFF = RW(1) * &
-                          ( 1d0 + safe_div( VH2O, VDry, 0d0 ) )**(1d0/3d0)
-
-                ENDIF
-
                 !get scaling for R and VOL
                 SCALER                 = REFF / RW(1)
                 SCALEVOL               = SCALER**3
@@ -1811,12 +1816,53 @@ CONTAINS
 
                 WTAREA(I,J,L,N+NDUST)   = TAREA(I,J,L,N+NDUST)
                 WERADIUS(I,J,L,N+NDUST) = ERADIUS(I,J,L,N+NDUST)
+                ! For SO4-NIT-NH4-fine sea salt aerosol, re-calculate the wet
+                ! effective
+                ! radius using the water content from ISORROPIA.
+                ! This new effective radius will be used for surface area
+                ! used in heterogeneous chemistry. We don't use this
+                ! effective radius in the optics above (OD, scattering,
+                ! absorption) because the index of refraction, phase
+                ! function, and Q must all be consistent with the radius and
+                ! composition.
+                ! (cdholmes, 5/17/2019, with update by XW, 5/28/2020)
+                IF (N == 1) THEN
+
+                   ! Volume of water, m3(H2O)/m3(air)
+                   ! AeroH2O has units g/m3
+                   VH2O = State_Chm%AeroH2O(I,J,L,NDUST+1) / 1e6
+                   ! Volume of dry aerosol, m3(aerosol)/m3(air)
+                   VDry = WAERSL(I,J,L,1)/MSDENS(1) + WAERSL(I,J,L,4)/MSDENS(4)
+
+                   ! Notes on REFF derivation
+                   ! Volume of wet aerosol: VWet = VDry + VH2O [note:
+                   ! this is incorrect but has the correct limits for
+                   ! VH2O/VDry << 1 and VH2O/VDry >> 1. It would be
+                   ! better to use an empirical function for density.]
+                   ! Volume of one dry particle v1dry = 4/3*pi*RDry**3
+                   ! [note: RW(1) = RDry]
+                   ! Number of aerosol particles: n = VDry / v1dry
+                   ! Volume of wet aerosol is also: VWet = 4/3*pi * RWet**3 * n
+                   ! So RWet = ( 3*VWet / (4 pi n) )**(1/3)
+                   ! RWet = RDry * ( 1 + VH2O/Vdry )**(1/3)
+                  
+                   ! Wet effective radius, um
+                   ! Here assume the dry radius of the mixture = SNA
+                   REFF = RW(1) * min( 3d0, &
+                          ( 1d0 + safe_div( VH2O, VDry, 0d0 ) )**(1d0/3d0))
+
+                   ACLRADIUS(I,J,L) = 1.0D-4 * REFF
+                   ACLAREA(I,J,L) = 3.D0*(VH2O + VDry) / ACLRADIUS(I,J,L)
+                ENDIF
 
                 ! Save aerosol water content. Assume that the increase in volume
                 ! equals the volume of pure water added, m3(H2O)/m3(air),
                 ! then convert to g/m3
-                State_Chm%AeroH2O(I,J,L,N+NDUST) = 1e+6_fp * &
-                   WAERSL(I,J,L,N) / MSDENS(N) * (ScaleVol - 1d0)
+                ! Don't update SNA, keep ISORROPIA values
+                IF (N.ne.1) THEN
+                   State_Chm%AeroH2O(I,J,L,N+NDUST) = 1e+6_fp * &
+                       WAERSL(I,J,L,N) / MSDENS(N) * (ScaleVol - 1d0)
+                ENDIF
 
                 !include hydrophobic BC and OC
                 !stored separate to hydrophillic in RT variables
@@ -1981,12 +2027,15 @@ CONTAINS
     IF ( State_Diag%Archive_AOD .and. ODSWITCH .EQ. 1 ) THEN
 
        ! Loop over aerosol types (dust handled in dust_mod.F90)
-       !$OMP PARALLEL DO                                            &
-       !$OMP DEFAULT( SHARED )                                      &
-       !$OMP PRIVATE( I, J, L, N, W, LINTERP, IsWL1, IsWL2, IsWL3 ) &
-       !$OMP SCHEDULE( DYNAMIC )
+       !$OMP PARALLEL DO                                                     &
+       !$OMP DEFAULT( SHARED                                               ) &
+       !$OMP PRIVATE( I, J, L, N, W, LINTERP, IsWL1, IsWL2, IsWL3, S       ) &
+       !$OMP SCHEDULE( DYNAMIC                                             )
        ! Loop over hydroscopic aerosols
-       DO N = 1, NRHAER
+       DO NA = 1, NRHAER
+
+          ! Get ID following ordering of aerosol densities in RD_AOD
+          N = Map_NRHAER(NA)
 
           ! Loop over wavelengths set in input.geos radiation menu
           DO W = 1, Input_Opt%NWVSELECT
@@ -2025,14 +2074,25 @@ CONTAINS
                 !  Sea Salt (coarse) Opt Depth(lambda1,2,3 nm)  [.]
                 IF ( .not. LINTERP ) THEN
                    IF ( State_Diag%Archive_AODHygWL1 .AND. IsWL1 ) THEN
-                      State_Diag%AODHygWL1(I,J,L,Map_NRHAER(N)) = &
+                      S = State_Diag%Map_AODHygWL1%id2slot(NA)
+                      IF ( S > 0 ) THEN
+                         State_Diag%AODHygWL1(I,J,L,S) = &
+                              ODAER(I,J,L,IWVSELECT(1,W),N)
+                      ENDIF
+
+                   ELSE IF ( State_Diag%Archive_AODHygWL2 .AND. IsWL2 ) THEN
+                      S = State_Diag%Map_AODHygWL2%id2slot(NA)
+                      IF ( S > 0 ) THEN
+                         State_Diag%AODHygWL2(I,J,L,S) = &
+                              ODAER(I,J,L,IWVSELECT(1,W),N)
+                      ENDIF
+
+                   ELSE IF ( State_Diag%Archive_AODHygWL3 .AND. IsWL3 ) THEN
+                      S = State_Diag%Map_AODHygWL3%id2slot(NA)
+                      IF ( S > 0 ) THEN
+                         State_Diag%AODHygWL3(I,J,L,S) = &
                            ODAER(I,J,L,IWVSELECT(1,W),N)
-                   ELSEIF ( State_Diag%Archive_AODHygWL2 .AND. IsWL2 ) THEN
-                      State_Diag%AODHygWL2(I,J,L,Map_NRHAER(N)) = &
-                           ODAER(I,J,L,IWVSELECT(1,W),N)
-                   ELSEIF ( State_Diag%Archive_AODHygWL3 .AND. IsWL3 ) THEN
-                      State_Diag%AODHygWL3(I,J,L,Map_NRHAER(N)) = &
-                           ODAER(I,J,L,IWVSELECT(1,W),N)
+                      ENDIF
                    ENDIF
                 ELSE
                    ! Interpolated using angstrom exponent between
@@ -2042,20 +2102,30 @@ CONTAINS
                    IF ((ODAER(I,J,L,IWVSELECT(2,W),N).GT.0).AND. &
                        (ODAER(I,J,L,IWVSELECT(1,W),N).GT.0)) THEN
                       IF ( State_Diag%Archive_AODHygWL1 .AND. IsWL1 ) THEN
-                         State_Diag%AODHygWL1(I,J,L,Map_NRHAER(N)) =          &
-                              ODAER(I,J,L,IWVSELECT(2,W),N)*ACOEF_WV(W)**     &
-                              (BCOEF_WV(W)*LOG(ODAER(I,J,L,IWVSELECT(1,W),N)/ &
+                         S = State_Diag%Map_AODHygWL1%id2slot(NA)
+                         IF ( S > 0 ) THEN
+                            State_Diag%AODHygWL1(I,J,L,S) =                  &
+                              ODAER(I,J,L,IWVSELECT(2,W),N)*ACOEF_WV(W)**    &
+                              (BCOEF_WV(W)*LOG(ODAER(I,J,L,IWVSELECT(1,W),N)/&
                               ODAER(I,J,L,IWVSELECT(2,W),N)))
-                      ELSEIF ( State_Diag%Archive_AODHygWL2 .AND. IsWL2 ) THEN
-                         State_Diag%AODHygWL2(I,J,L,Map_NRHAER(N)) =          &
-                              ODAER(I,J,L,IWVSELECT(2,W),N)*ACOEF_WV(W)**     &
-                              (BCOEF_WV(W)*LOG(ODAER(I,J,L,IWVSELECT(1,W),N)/ &
+                         ENDIF
+
+                      ELSE IF ( State_Diag%Archive_AODHygWL2 .AND. IsWL2 ) THEN
+                         S = State_Diag%Map_AODHygWL2%id2slot(NA)
+                         IF ( S > 0 ) THEN
+                            State_Diag%AODHygWL2(I,J,L,S) =                  &
+                              ODAER(I,J,L,IWVSELECT(2,W),N)*ACOEF_WV(W)**    &
+                              (BCOEF_WV(W)*LOG(ODAER(I,J,L,IWVSELECT(1,W),N)/&
                               ODAER(I,J,L,IWVSELECT(2,W),N)))
-                      ELSEIF ( State_Diag%Archive_AODHygWL3 .AND. IsWL3 ) THEN
-                         State_Diag%AODHygWL3(I,J,L,Map_NRHAER(N)) =          &
-                              ODAER(I,J,L,IWVSELECT(2,W),N)*ACOEF_WV(W)**     &
-                              (BCOEF_WV(W)*LOG(ODAER(I,J,L,IWVSELECT(1,W),N)/ &
+                         ENDIF
+                      ELSE IF ( State_Diag%Archive_AODHygWL3 .AND. IsWL3 ) THEN
+                         S = State_Diag%Map_AODHygWL3%id2slot(NA)
+                         IF ( S > 0 ) THEN
+                            State_Diag%AODHygWL3(I,J,L,S) =                  &
+                              ODAER(I,J,L,IWVSELECT(2,W),N)*ACOEF_WV(W)**    &
+                              (BCOEF_WV(W)*LOG(ODAER(I,J,L,IWVSELECT(1,W),N)/&
                               ODAER(I,J,L,IWVSELECT(2,W),N)))
+                         ENDIF
                       ENDIF
                    ENDIF
                 ENDIF
@@ -2096,12 +2166,15 @@ CONTAINS
     !------------------------------------
     IF ( State_Diag%Archive_AerSurfAreaHyg .AND. ODSWITCH .EQ. 1) THEN
 
-       !$OMP PARALLEL DO           &
-       !$OMP DEFAULT( SHARED )     &
-       !$OMP PRIVATE( I, J, L, N ) &
-       !$OMP SCHEDULE( DYNAMIC )
+       !$OMP PARALLEL DO              &
+       !$OMP DEFAULT( SHARED        ) &
+       !$OMP PRIVATE( I, J, L, N, S ) &
+       !$OMP SCHEDULE( DYNAMIC      )
        ! Loop over hydroscopic aerosols
-       DO N = 1, NRHAER
+       DO NA = 1, NRHAER
+
+          ! Get ID following ordering of aerosol densities in RD_AOD
+          N = Map_NRHAER(NA)
 
           !----------------------------------------------------
           ! Netcdf diagnostics computed here:
@@ -2110,14 +2183,18 @@ CONTAINS
           !  Organic Carbon (hydrophilic) Surface Area  [cm2/cm3]
           !  Sea Salt (accum) Surface Area              [cm2/cm3]
           !  Sea Salt (coarse) Surface Area             [cm2/cm3]
-          DO L = 1, State_Grid%NZ
-          DO J = 1, State_Grid%NY
-          DO I = 1, State_Grid%NX
-             State_Diag%AerSurfAreaHyg(I,J,L,Map_NRHAER(N)) = &
-                  TAREA(I,J,L,N+NDUST)
-          ENDDO
-          ENDDO
-          ENDDO
+          !----------------------------------------------------
+          S = State_Diag%Map_AerSurfAreaHyg%id2slot(NA)
+          IF ( S > 0 ) THEN
+             DO L = 1, State_Grid%NZ
+             DO J = 1, State_Grid%NY
+             DO I = 1, State_Grid%NX
+                State_Diag%AerSurfAreaHyg(I,J,L,S) = &
+                     TAREA(I,J,L,N+NDUST)
+             ENDDO
+             ENDDO
+             ENDDO
+          ENDIF
 
        ENDDO ! end of loop over hygroscopic aerosols
        !$OMP END PARALLEL DO
@@ -2157,7 +2234,7 @@ CONTAINS
     !TAREA(:,NDUST+NRHAER+2) = 0.d0 !SPA
 
     ! Free pointers
-    NULLIFY( BXHEIGHT, ERADIUS, TAREA, WERADIUS, WTAREA )
+    NULLIFY( BXHEIGHT, ERADIUS, TAREA, WERADIUS, WTAREA, ACLRADIUS, ACLAREA )
 
     ! Reset first-time flag
     FIRST = .FALSE.
@@ -2223,6 +2300,9 @@ CONTAINS
     ErrMsg    = ''
     ThisLoc   = ' -> at Init_Aerosol (in module GeosCore/aerosol_mod.F90)'
 
+    ! Exit immediately if this is a dry-run
+    IF ( Input_Opt%DryRun ) RETURN
+
     ! Add tracer ID flags as module variables (bmy, 6/16/16)
     id_BCPI   = Ind_( 'BCPI'   )
     id_BCPO   = Ind_( 'BCPO'   )
@@ -2238,6 +2318,7 @@ CONTAINS
     id_SOAS   = Ind_( 'SOAS'   )
     id_SALA   = Ind_( 'SALA'   )
     id_SALC   = Ind_( 'SALC'   )
+    id_SALACL = Ind_( 'SALACL' )
     id_SO4    = Ind_( 'SO4'    )
     id_SO4s   = Ind_( 'SO4s'   )
     id_NITs   = Ind_( 'NITs'   )
@@ -2295,6 +2376,11 @@ CONTAINS
     CALL GC_CheckVar( 'aerosol_mod.F90:SALC', 0, RC )
     IF ( RC /= GC_SUCCESS ) RETURN
     SALC = 0.0_fp
+
+    ALLOCATE( ACL( State_Grid%NX, State_Grid%NY, State_Grid%NZ ),  STAT=RC )
+    CALL GC_CheckVar( 'aerosol_mod.F:ACL', 0, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+    ACL = 0.0_fp
 
     ALLOCATE( SO4_NH4_NIT(State_Grid%NX,State_Grid%NY,State_Grid%NZ ), STAT=RC )
     CALL GC_CheckVar( 'aerosol_mod.F90:SO4_NH4_NIT', 0, RC )
@@ -2432,6 +2518,7 @@ CONTAINS
     IF ( ALLOCATED( OCPISOA     ) ) DEALLOCATE( OCPISOA     )
     IF ( ALLOCATED( SALA        ) ) DEALLOCATE( SALA        )
     IF ( ALLOCATED( SALC        ) ) DEALLOCATE( SALC        )
+    IF ( ALLOCATED( ACL         ) ) DEALLOCATE( ACL         )
     IF ( ALLOCATED( SO4_NH4_NIT ) ) DEALLOCATE( SO4_NH4_NIT )
     IF ( ALLOCATED( SO4         ) ) DEALLOCATE( SO4         )
     IF ( ALLOCATED( NH4         ) ) DEALLOCATE( NH4         )

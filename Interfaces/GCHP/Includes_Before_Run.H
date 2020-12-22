@@ -1,7 +1,6 @@
 !EOC
 !------------------------------------------------------------------------------
-!     NASA/GSFC, Global Modeling and Assimilation Office, Code 910.1 and      !
-!          Harvard University Atmospheric Chemistry Modeling Group            !
+!                  GEOS-Chem Global Chemical Transport Model                  !
 !------------------------------------------------------------------------------
 !BOP
 !
@@ -71,6 +70,36 @@
   State_Met%FRLAKE              = FRLAKE                     ! 1
   State_Met%FRLANDIC            = FRLANDIC                   ! 1
   State_Met%ALBD                = ALBD                       ! 1
+  State_Met%PHIS                = PHIS / 9.80665d0           ! m
+  State_Met%GWETROOT            = GWETROOT                   ! 1
+  State_Met%GWETTOP             = GWETTOP                    ! 1
+  State_Met%LAI                 = LAI                        ! 1  
+  State_Met%OMEGA               = OMEGA                      ! Pa s-1
+  State_Met%PARDR               = PARDR                      ! W/m2
+  State_Met%PARDF               = PARDF                      ! W/m2
+  State_Met%PBLH                = PBLH                       ! m
+  State_Met%TROPP               = TROPP                      ! hPa
+  State_Met%PS1_WET             = PS1                        ! hPa
+  State_Met%PS2_WET             = PS2                        ! hPa
+  State_Met%SLP                 = SLP                        ! hPa
+  State_Met%TMPU1               = TMPU1
+  State_Met%TMPU2               = TMPU2
+  State_Met%TS                  = TS                         ! K
+  State_Met%TSKIN               = TSKIN                      ! K
+  State_Met%SWGDN               = RADSWG                     ! W/m2
+  State_Met%TO3                 = TO3                        ! dobson
+  State_Met%SNODP               = SNODP                      ! m
+  State_Met%SNOMAS              = SNOMAS                     ! kg/m2
+  State_Met%SUNCOS              = zenith                     ! unitless
+  State_Met%SUNCOSmid           = zenith                     ! 1
+  State_Met%U                   = UA                         ! m/s
+  State_Met%U10M                = U10M                       ! m/s
+  State_Met%USTAR               = USTAR                      ! m/s
+  State_Met%V                   = VA                         ! m/s
+  State_Met%V10M                = V10M                       ! m/s
+  State_Met%Z0                  = Z0                         ! m
+
+  ! Set LWI based on land type fractions in imports: 0=water, 1=land, 2=ice
   DO J=1,State_Grid%NY
   DO I=1,State_Grid%NX
      IMAXLOC = MAXLOC( (/ FRLAND(I,J) + FRLANDIC(I,J) + FRLAKE(I,J),  &
@@ -110,7 +139,7 @@
   ! Convert Pa -> hPa
   State_Met%PEDGE  (:,:,1:State_Grid%NZ+1) = PLE(:,:,State_Grid%NZ:0:-1) / 1d2
 
-  ! These will be set based on PS1_WET and PS2_WET in gigc_chunk_mod.F90
+  ! These will be set based on PS1_WET and PS2_WET in gchp_chunk_mod.F90
   State_Met%PS1_DRY(:,:) = 0.0d0 
   State_Met%PS2_DRY(:,:) = 0.0d0
 

@@ -36,7 +36,7 @@ MODULE PRESSURE_MOD
 #if defined( ESMF_ ) || defined( MODEL_ )
   PUBLIC  :: Accept_External_Pedge
 #endif
-#if defined( MODEL_WRF )
+#if defined( MODEL_WRF ) || defined( MODEL_CESM )
   PUBLIC  :: Accept_External_ApBp
 #endif
 !
@@ -83,7 +83,6 @@ MODULE PRESSURE_MOD
                                                   !  external grid
 #endif
 
-#if defined( MODEL_GEOS )
   REAL(fp)              :: a132_loc(133), b132_loc(133)
 
 ! GEOS-5 132 levels (from /src/GMAO_Shared/GMAO_hermes/m_set_eta.F90
@@ -156,7 +155,6 @@ MODULE PRESSURE_MOD
                   0.883905, 0.896733, 0.908781, 0.920085, &
                   0.930681, 0.940600, 0.949868, 0.958500, &
                   0.966498, 0.973850, 0.980526, 0.986474, 1.000000 /
-#endif
 
 CONTAINS
 !EOC
@@ -577,7 +575,6 @@ CONTAINS
 !
 ! !LOCAL VARIABLES:
 !
-    INTEGER :: AS
     INTEGER :: L
 
     CHARACTER(LEN=255) :: ErrMsg, ThisLoc, nLev
@@ -590,34 +587,41 @@ CONTAINS
     RC      = GC_SUCCESS
     ThisLoc = ' -> at Init_Pressure (in GeosUtil/pressure_mod.F90)'
 
-    ALLOCATE( PFLT_DRY( State_Grid%NX, State_Grid%NY ), STAT=AS )
-    IF ( AS /= 0 ) CALL ALLOC_ERR( 'PFLT_DRY' )
+    ALLOCATE( PFLT_DRY( State_Grid%NX, State_Grid%NY ), STAT=RC )
+    CALL GC_CheckVar( 'vdiff_mod.F90:PFLT_DRY', 2, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
     PFLT_DRY = 0e+0_fp
 
-    ALLOCATE( PFLT_WET( State_Grid%NX, State_Grid%NY ), STAT=AS )
-    IF ( AS /= 0 ) CALL ALLOC_ERR( 'PFLT_WET' )
+    ALLOCATE( PFLT_WET( State_Grid%NX, State_Grid%NY ), STAT=RC )
+    CALL GC_CheckVar( 'vdiff_mod.F90:PFLT_WET', 2, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
     PFLT_WET = 0e+0_fp
 
-    ALLOCATE( AP( State_Grid%NZ+1 ), STAT=AS )
-    IF ( AS /= 0 ) CALL ALLOC_ERR( 'AP' )
+    ALLOCATE( AP( State_Grid%NZ+1 ), STAT=RC )
+    CALL GC_CheckVar( 'vdiff_mod.F90:AP', 2, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
     AP = 1e+0_fp
 
-    ALLOCATE( BP( State_Grid%NZ+1 ), STAT=AS )
-    IF ( AS /= 0 ) CALL ALLOC_ERR( 'BP' )
+    ALLOCATE( BP( State_Grid%NZ+1 ), STAT=RC )
+    CALL GC_CheckVar( 'vdiff_mod.F90:BP', 2, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
     BP = 0e+0_fp
 
-    ALLOCATE( AP_FULLGRID( State_Grid%NativeNZ+1 ), STAT=AS )
-    IF ( AS /= 0 ) CALL ALLOC_ERR( 'AP_FULLGRID' )
+    ALLOCATE( AP_FULLGRID( State_Grid%NativeNZ+1 ), STAT=RC )
+    CALL GC_CheckVar( 'vdiff_mod.F90:AP_FULLGRID', 2, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
     AP = 1e+0_fp
 
-    ALLOCATE( BP_FULLGRID( State_Grid%NativeNZ+1 ), STAT=AS )
-    IF ( AS /= 0 ) CALL ALLOC_ERR( 'BP_FULLGRID' )
+    ALLOCATE( BP_FULLGRID( State_Grid%NativeNZ+1 ), STAT=RC )
+    CALL GC_CheckVar( 'vdiff_mod.F90:BP_FULLGRID', 2, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
     BP = 0e+0_fp
 
 #if defined( ESMF_ ) || defined( MODEL_ )
     ALLOCATE( EXTERNAL_PEDGE( State_Grid%NX, State_Grid%NY, State_Grid%NZ+1 ), &
-              STAT=AS )
-    IF ( AS /= 0 ) CALL ALLOC_ERR( 'EXTERNAL_PEDGE' )
+              STAT=RC )
+    CALL GC_CheckVar( 'vdiff_mod.F90:EXTERNAL_PEDGE', 2, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
     EXTERNAL_PEDGE = 0e+0_fp
 #endif
 
@@ -777,7 +781,6 @@ CONTAINS
 
     ELSE IF ( State_Grid%NZ == 132 ) THEN
 
-#if defined( MODEL_GEOS )
        !-----------------------------------------------------------------
        ! 132 level grid
        !-----------------------------------------------------------------
@@ -790,15 +793,15 @@ CONTAINS
           BP(L) = b132_loc(State_Grid%NZ+2-L)
        ENDDO
 
-#endif
-
+#if !defined( MODEL_WRF ) && !defined( MODEL_CESM )
     ELSE
 
        WRITE( nLev, * ) State_Grid%NZ
        ErrMSg = 'Ap and Bp not defined for ' // TRIM( nLev ) // &
-                ' levels. See subroutine INIT_PRESSURE.'
+                ' levels. Please add these defintions in pressure_mod.F90.'
        CALL GC_Error( ErrMsg, RC, ThisLoc )
        RETURN
+#endif
 
     ENDIF
 
@@ -901,7 +904,7 @@ CONTAINS
   END SUBROUTINE Accept_External_Pedge
 !EOC
 #endif
-#if defined ( MODEL_WRF )
+#if defined ( MODEL_WRF ) || defined( MODEL_CESM )
 !------------------------------------------------------------------------------
 !                  GEOS-Chem Global Chemical Transport Model                  !
 !------------------------------------------------------------------------------

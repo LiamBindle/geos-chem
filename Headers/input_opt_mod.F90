@@ -68,6 +68,7 @@ MODULE Input_Opt_Mod
      CHARACTER(LEN=255)          :: CHEM_INPUTS_DIR
      CHARACTER(LEN=255)          :: MetField
      CHARACTER(LEN=255)          :: SimulationName
+     CHARACTER(LEN=255)          :: SpcDatabaseFile
      LOGICAL                     :: ITS_A_CH4_SIM
      LOGICAL                     :: ITS_A_CO2_SIM
      LOGICAL                     :: ITS_A_FULLCHEM_SIM
@@ -147,6 +148,9 @@ MODULE Input_Opt_Mod
      LOGICAL                     :: LCH4EMIS
      LOGICAL                     :: LCH4SBC
      LOGICAL                     :: LSETH2O
+     LOGICAL                     :: LHCodedOrgHal
+     LOGICAL                     :: LCMIP6OrgHal
+     LOGICAL                     :: DoLightNOx ! Shadow for LightNOX extension
 
      !----------------------------------------
      ! CO MENU fields
@@ -394,7 +398,6 @@ MODULE Input_Opt_Mod
      INTEGER, POINTER            :: Jval_IDs(:)             ! J-values to be diagnosed
      INTEGER                     :: FJX_EXTRAL_ITERMAX = 5
      LOGICAL                     :: FJX_EXTRAL_ERR     = .TRUE.
-     LOGICAL                     :: KppStop            = .TRUE. ! Stop KPP if integration fails twice
      ! Toggle for het rates. If true, turns off three Cl producing het reactions
      ! in the stratosphere. In MODEL_GEOS, this flag is set in GEOSCHEMchem_GridComp.rc
      LOGICAL                     :: TurnOffHetRates = .FALSE.
@@ -403,6 +406,16 @@ MODULE Input_Opt_Mod
      LOGICAL                     :: TurnOffHetRates
 #endif
 
+#if defined( MODEL_GEOS ) || defined( MODEL_WRF )
+     LOGICAL                     :: KppStop            = .TRUE. ! Stop KPP if integration fails twice
+#endif
+
+#if defined( MODEL_CESM )
+     LOGICAL                     :: onlineAlbedo       = .TRUE. ! Use albedo from land model
+     LOGICAL                     :: onlineLandTypes    = .TRUE. ! Use land types from land model
+     LOGICAL                     :: ddVel_CLM          = .TRUE. ! Use dry deposition velocities as computed by the Community Land Model
+     LOGICAL                     :: applyQtend         = .TRUE. ! Apply water vapor tendency to specific humidity
+#endif
      !----------------------------------------
      ! Fields for LINOZ strat chem
      !----------------------------------------
@@ -535,6 +548,7 @@ CONTAINS
     Input_Opt%CHEM_INPUTS_DIR        = './'
     Input_Opt%MetField               = ''
     Input_Opt%SimulationName         = ''
+    Input_Opt%SpcDatabaseFile        = ''
     Input_Opt%ITS_A_CH4_SIM          = .FALSE.
     Input_Opt%ITS_A_CO2_SIM          = .FALSE.
     Input_Opt%ITS_A_FULLCHEM_SIM     = .FALSE.
@@ -631,6 +645,9 @@ CONTAINS
     Input_Opt%LCH4EMIS               = .FALSE.
     Input_Opt%LCH4SBC                = .FALSE.
     Input_Opt%LSETH2O                = .FALSE.
+    Input_Opt%LHCodedOrgHal          = .FALSE.
+    Input_Opt%LCMIP6OrgHal           = .FALSE.
+    Input_Opt%DoLightNOx             = .FALSE.
 
     !----------------------------------------
     ! CO MENU fields

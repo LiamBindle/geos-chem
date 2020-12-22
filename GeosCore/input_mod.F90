@@ -25,7 +25,9 @@ MODULE INPUT_MOD
 !
 ! !PUBLIC MEMBER FUNCTIONS:
 !
+#if !defined ( MODEL_CESM )
   PUBLIC  :: Read_Input_File
+#endif
   PUBLIC  :: Do_Error_Checks
   PUBLIC  :: Validate_Directories
 !
@@ -45,6 +47,7 @@ MODULE INPUT_MOD
 
 CONTAINS
 !EOC
+#if !defined( MODEL_CESM )
 !------------------------------------------------------------------------------
 !                  GEOS-Chem Global Chemical Transport Model                  !
 !------------------------------------------------------------------------------
@@ -57,8 +60,7 @@ CONTAINS
 !\\
 !\\
 ! In an ESMF environment, all time steps (chemistry, convection, emissions,
-! dynamics) must be specified externally before calling this routine. This is
-! done in routine GIGC\_Init\_Simulation (gigc\_initialization\_mod.F90).
+! dynamics) must be specified externally before calling this routine.
 ! The time steps specified in input.geos are ignored.
 !\\
 !\\
@@ -310,6 +312,14 @@ CONTAINS
              RETURN
           ENDIF
 
+       ELSE IF ( INDEX( LINE, 'OBSPACK MENU' ) > 0 ) THEN
+          CALL READ_OBSPACK_MENU( Input_Opt, RC )
+          IF ( RC /= GC_SUCCESS ) THEN
+             ErrMsg = 'Error in "Read_ObsPack_Menu"!'
+             CALL GC_Error( ErrMsg, RC, ThisLoc )
+             RETURN
+          ENDIF
+
 #ifdef BPCH_DIAG
        !==============================================================
        ! Skip BPCH-related menus unless compiled with BPCH_DIAG=y
@@ -390,6 +400,7 @@ CONTAINS
 
   END SUBROUTINE READ_INPUT_FILE
 !EOC
+#endif
 !------------------------------------------------------------------------------
 !                  GEOS-Chem Global Chemical Transport Model                  !
 !------------------------------------------------------------------------------
@@ -701,38 +712,25 @@ CONTAINS
 
     ! Error check simulation name
     Sim = To_UpperCase( TRIM( Input_Opt%SimulationName ) )
-    IF ( TRIM(Sim) /= 'ACIDUPTAKE'       .and. &
-         TRIM(Sim) /= 'AEROSOL'          .and. &
-         TRIM(Sim) /= 'APM'              .and. &
-         TRIM(Sim) /= 'BENCHMARK'        .and. &
+    IF ( TRIM(Sim) /= 'AEROSOL'          .and. &
          TRIM(Sim) /= 'CH4'              .and. &
          TRIM(Sim) /= 'CO2'              .and. &
-         TRIM(Sim) /= 'COMPLEXSOA'       .and. &
-         TRIM(Sim) /= 'COMPLEXSOA_SVPOA' .and. &
-         TRIM(Sim) /= 'HEMCO'            .and. &
+         TRIM(Sim) /= 'FULLCHEM'         .and. &
          TRIM(Sim) /= 'HG'               .and. &
-         TRIM(Sim) /= 'MARINEPOA'        .and. &
          TRIM(Sim) /= 'POPS'             .and. &
          TRIM(Sim) /= 'RRTMG'            .and. &
          TRIM(Sim) /= 'STANDARD'         .and. &
          TRIM(Sim) /= 'ADVECTION'        .and. &
          TRIM(Sim) /= 'TRANSPORTTRACERS' .and. &
-         TRIM(Sim) /= 'TROPCHEM'         .and. &
          TRIM(Sim) /= 'TAGCO'            .and. &
          TRIM(Sim) /= 'TAGCH4'           .and. &
          TRIM(Sim) /= 'TAGHG'            .and. &
-         TRIM(Sim) /= 'TAGO3'            .and. &
-         TRIM(Sim) /= 'TOMAS12'          .and. &
-         TRIM(Sim) /= 'TOMAS15'          .and. &
-         TRIM(Sim) /= 'TOMAS30'          .and. &
-         TRIM(Sim) /= 'TOMAS40'          ) THEN
+         TRIM(Sim) /= 'TAGO3'            ) THEN
        ErrMsg = Trim( Input_Opt%SimulationName) // ' is not a'      // &
                 ' valid simulation. Supported simulations are:'     // &
-                ' AcidUptake, Aerosol, APM, Benchmark, CH4, CO2,'   // &
-                ' ComplexSOA, ComplexSOA_SVPOA, HEMCO, Hg,'         // &
-                ' MarinePOA, POPs, RRTMG, Standard, Advection,'     // &
-                ' TransportTracers, Tropchem, TagCO, TagCH4, TagHg,'// &
-                ' TagO3, TOMAS12, TOMAS15, TOMAS30, and TOMAS40.'
+                ' aerosol, CH4, CO2, fullchem, Hg, POPs,'           // &
+                ' RRTMG, STANDARD, ADVECTION,'                      // &
+                ' TransportTracers, TagCO, TagCH4, TagHg, or TagO3.'
        CALL GC_Error( ErrMsg, RC, ThisLoc )
        RETURN
     ENDIF
@@ -741,20 +739,7 @@ CONTAINS
     Input_Opt%ITS_A_CH4_SIM      = ( TRIM(Sim) == 'CH4'              .or. &
                                      TRIM(Sim) == 'TAGCH4'           )
     Input_Opt%ITS_A_CO2_SIM      = ( TRIM(Sim) == 'CO2'              )
-    Input_Opt%ITS_A_FULLCHEM_SIM = ( TRIM(Sim) == 'ACIDUPTAKE'       .or. &
-                                     TRIM(Sim) == 'APM'              .or. &
-                                     TRIM(Sim) == 'BENCHMARK'        .or. &
-                                     TRIM(Sim) == 'COMPLEXSOA'       .or. &
-                                     TRIM(Sim) == 'COMPLEXSOA_SVPOA' .or. &
-                                     TRIM(Sim) == 'HEMCO'            .or. &
-                                     TRIM(Sim) == 'MARINEPOA'        .or. &
-                                     TRIM(Sim) == 'RRTMG'            .or. &
-                                     TRIM(Sim) == 'STANDARD'         .or. &
-                                     TRIM(Sim) == 'TROPCHEM'         .or. &
-                                     TRIM(Sim) == 'TOMAS12'          .or. &
-                                     TRIM(Sim) == 'TOMAS15'          .or. &
-                                     TRIM(Sim) == 'TOMAS30'          .or. &
-                                     TRIM(Sim) == 'TOMAS40'          )
+    Input_Opt%ITS_A_FULLCHEM_SIM = ( TRIM(Sim) == 'FULLCHEM'         )
     Input_Opt%ITS_A_MERCURY_SIM  = ( TRIM(Sim) == 'HG'               .or. &
                                      TRIM(Sim) == 'TAGHG'            )
     Input_Opt%ITS_A_POPS_SIM     = ( TRIM(Sim) == 'POPS'             )
@@ -763,6 +748,16 @@ CONTAINS
     Input_Opt%ITS_A_TAGCO_SIM    = ( TRIM(Sim) == 'TAGCO'            )
     Input_Opt%ITS_AN_ADV_SIM     = ( TRIM(Sim) == 'ADVECTION'        )
     Input_Opt%ITS_AN_AEROSOL_SIM = ( TRIM(Sim) == 'AEROSOL'          )
+
+    !-----------------------------------------------------------------
+    ! Species database file
+    !-----------------------------------------------------------------
+    CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'Spc Database', RC )
+    IF ( RC /= GC_SUCCESS ) THEN
+       CALL GC_Error( ErrMsg, RC, ThisLoc )
+       RETURN
+    ENDIF
+    READ( SUBSTRS(1:N), '(a)' ) Input_Opt%SpcDatabaseFile
 
     !-----------------------------------------------------------------
     ! Turn on debug output
@@ -814,6 +809,8 @@ CONTAINS
                         TRIM( Input_Opt%MetField )
        WRITE( 6, 110 ) 'Simulation name             : ', &
                         TRIM( Input_Opt%SimulationName )
+       WRITE( 6, 110 ) 'Species database file       : ', &
+                        TRIM( Input_Opt%SpcDatabaseFile )
        WRITE( 6, 120 ) 'Turn on debug output        : ', &
                         Input_Opt%LPRT
        WRITE( 6, 120 ) 'Turn on GEOS-Chem timers    : ', &
@@ -975,20 +972,6 @@ CONTAINS
     ENDIF
     READ( SUBSTRS(1:N), * ) State_Grid%GridRes
 
-    ! Make sure grid resolution is valid
-    IF ( TRIM(State_Grid%GridRes) /= '4.0x5.0'       .and. &
-         TRIM(State_Grid%GridRes) /= '2.0x2.5'       .and. &
-         TRIM(State_Grid%GridRes) /= '0.5x0.625'     .and. &
-         TRIM(State_Grid%GridRes) /= '0.25x0.3125' ) THEN
-
-       ErrMsg = 'State_Grid%GridRes = ' // Trim( State_Grid%GridRes)// &
-                ' is not a valid grid resolution! Supported'        // &
-                ' resoltuions are 4.0x5.0, 2.0x2.5, 0.5x0.625, and' // &
-                ' 0.25x0.3125. Please check your "input.geos" file.'
-       CALL GC_Error( ErrMsg, RC, ThisLoc )
-       RETURN
-    ENDIF
-
     ! Split into two values, separated by 'x'
     CALL StrSplit( Trim(State_Grid%GridRes) , 'x', SubStrs, nSubStrs )
 
@@ -1092,17 +1075,6 @@ CONTAINS
        RETURN
     ENDIF
     READ( SUBSTRS(1:N), * ) State_Grid%NZ
-
-    ! Make sure number of levels is valid
-    IF ( State_Grid%NZ /= 47 .and. State_Grid%NZ /= 72 ) THEN
-       WRITE( nLev, * ) State_Grid%NZ
-       ErrMsg = 'Input%Opt%NZ = ' // TRIM( nLev )                 // &
-                ' is not a valid vertical resolution! Supported' // &
-                ' number of levels are 47 and 72. Please check'  // &
-                ' your "input.geos" file.'
-       CALL GC_Error( ErrMsg, RC, ThisLoc )
-       RETURN
-    ENDIF
 
     !-----------------------------------------------------------------
     ! Nested grid settings
@@ -1929,9 +1901,9 @@ CONTAINS
     ! Arrays
     CHARACTER(LEN=255) :: SUBSTRS(MAXDIM)
 
-    !=================================================================
+    !=======================================================================
     ! READ_EMISSIONS_MENU begins here!
-    !=================================================================
+    !=======================================================================
 
     ! Initialize
     RC      = GC_SUCCESS
@@ -1946,13 +1918,22 @@ CONTAINS
        RETURN
     ENDIF
 
-    ! Turn on emissions?
-    CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'LLEMIS', RC )
-    IF ( RC /= GC_SUCCESS ) THEN
-       CALL GC_Error( ErrMsg, RC, ThisLoc )
-       RETURN
-    ENDIF
-    READ( SUBSTRS(1:N), * ) Input_Opt%LEMIS
+    !-----------------------------------------------------------------------
+    ! NOTE: Prior to FlexGrid, the Input_Opt%LEMIS switch was used to
+    ! turn emissions on or off.  But since FlexGrid, we also use HEMCO
+    ! to read met fields and chemistry inputs as well as emissions.
+    ! Setting Input_Opt%LEMIS = .FALSE. will turn off HEMCO completely,
+    ! which will cause met fields and chemistry inputs not to be read.
+    !
+    ! The quick fix is to just hardwire Input_Opt%LEMIS = .TRUE. and
+    ! then use the MAIN SWITCHES in HEMCO_Config.rc to toggle the
+    ! emissions, met fields, and chemistry inputs on or off.
+    ! We have also removed the corresponding line from input.geos.
+    !
+    !    -- Bob Yantosca (29 Jul 2020)
+    !
+    Input_Opt%LEMIS = .TRUE.
+    !-----------------------------------------------------------------------
 
     ! HEMCO Input file
     CALL SPLIT_ONE_LINE( SUBSTRS, N, 1, 'HcoConfigFile', RC )
@@ -2720,13 +2701,7 @@ CONTAINS
     !=================================================================
 
     ! Use of RRTMG necessitates recompilation
-#ifdef RRTMG
-    IF ( .not. Input_Opt%LRAD ) THEN
-       ErrMsg = 'LRAD=F but RRTMG is defined at compile time!'
-       CALL GC_Error( ErrMsg, RC, ThisLoc )
-       RETURN
-    ENDIF
-#else
+#if !defined( RRTMG )
     IF ( Input_Opt%LRAD ) THEN
        ErrMsg = 'LRAD=T but RRTMG is not defined at compile time!'
        CALL GC_Error( ErrMsg, RC, ThisLoc )

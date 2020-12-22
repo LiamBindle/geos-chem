@@ -24,14 +24,13 @@ MODULE TAGGED_O3_MOD
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !%%% If you want to the EXTENDED SIMULATION with all 13 tagged O3 species,
 !%%% then uncomment this #ifdef statement. (bmy, 4/11/14)
-!#define USE_ALL_TAGO3_SPECIES 1
+#define USE_ALL_TAGO3_SPECIES 1
 !%%%
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
 ! !PUBLIC MEMBER FUNCTIONS:
 !
   PUBLIC  :: CHEM_TAGGED_O3
-  PUBLIC  :: CLEANUP_TAGGED_O3
   PUBLIC  :: INIT_TAGGED_O3
 !
 ! !PRIVATE MEMBER FUNCTIONS:
@@ -42,23 +41,23 @@ MODULE TAGGED_O3_MOD
 !  THE SIMPLE TAGGED O3 SIMULATION (default setting) HAS THESE ADVECTED SPECIES:
 !  ----------------------------------------------------------------------------
 !  (1 ) O3      : Total O3
-!  (2 ) O3Strt  : Stratospheric O3
+!  (2 ) O3Strat : Stratospheric O3
 !                                                                             .
 !  THE EXTENDED TAGGED O3 SIMULATION HAS THESE ADVECTED SPECIES:
 !  ----------------------------------------------------------------------------
 !  (1 ) O3      : Total O3
-!  (2 ) O3Strt  : O3 from the Stratosphere      (tropopause - atm top   )
-!  (3 ) O3Ut    : O3 produced in Upper Trop     (350 hPa    - tropopause)
-!  (4 ) O3Mt    : O3 produced in Middle Trop    (PBL top    - 350 hPa   )
-!  (5 ) O3Row   : O3 produced in Rest of World  (surface    - PBL top   )
-!  (6 ) O3PcBl  : O3 produced in Pacific BL     (surface    - PBL top   )
-!  (7 ) O3NaBl  : O3 produced in N. American BL (surface    - PBL top   )
-!  (8 ) O3AtBl  : O3 produced in Atlantic BL    (surface    - PBL top   )
-!  (9 ) O3EuBl  : O3 produced in European BL    (surface    - PBL top   )
-!  (10) O3AfBl  : O3 produced in N. African BL  (surface    - PBL top   )
-!  (11) O3AsBl  : O3 produced in Asian          (surface    - PBL top   )
-!  (12) O3Init  : O3 initial conditions         (all levels             )
-!  (13) O3USA   : O3 produced over the USA      (all levels             )
+!  (2 ) O3Strat : O3 from the Stratosphere      (tropopause - atm top   )
+!  (3 ) O3ut    : O3 produced in Upper Trop     (350 hPa    - tropopause)
+!  (4 ) O3mt    : O3 produced in Middle Trop    (PBL top    - 350 hPa   )
+!  (5 ) O3row   : O3 produced in Rest of World  (surface    - PBL top   )
+!  (6 ) O3pcbl  : O3 produced in Pacific BL     (surface    - PBL top   )
+!  (7 ) O3nabl  : O3 produced in N. American BL (surface    - PBL top   )
+!  (8 ) O3atbl  : O3 produced in Atlantic BL    (surface    - PBL top   )
+!  (9 ) O3eubl  : O3 produced in European BL    (surface    - PBL top   )
+!  (10) O3afbl  : O3 produced in N. African BL  (surface    - PBL top   )
+!  (11) O3asbl  : O3 produced in Asian          (surface    - PBL top   )
+!  (12) O3init  : O3 initial conditions         (all levels             )
+!  (13) O3usa   : O3 produced over the USA      (all levels             )
 !                                                                             .
 !  NOTES:
 !  ----------------------------------------------------------------------------
@@ -91,10 +90,6 @@ MODULE TAGGED_O3_MOD
 !
 ! !PRIVATE TYPES:
 !
-  ! These are pointers to fields in the HEMCO data structure.
-  ! Declare these with REAL(f4), aka REAL*4. (bmy, 3/4/15)
-  REAL(f4), POINTER            :: P24H(:,:,:) => NULL() ! O3 production rate
-  REAL(f4), POINTER            :: L24H(:,:,:) => NULL() ! O3 loss rate
 
   ! Emission timestep (will be imported from HEMCO)
   REAL(fp)                     :: TS_EMIS
@@ -139,7 +134,7 @@ CONTAINS
 !\\
 ! !INTERFACE:
 !
-  SUBROUTINE GET_REGIONAL_PO3( I, J, L, PP, State_Grid, State_Met )
+  SUBROUTINE GET_REGIONAL_PO3( I, J, L, P24H, PP, State_Grid, State_Met )
 !
 ! !USES:
 !
@@ -153,6 +148,7 @@ CONTAINS
     INTEGER,        INTENT(IN)  :: I, J, L     ! Grid box indices
     TYPE(GrdState), INTENT(IN)  :: State_Grid  ! Grid State object
     TYPE(MetState), INTENT(IN)  :: State_Met   ! Meteorology State object
+    REAL(fp),       POINTER     :: P24H(:,:,:) ! O3 production from HEMCO
 !
 ! !OUTPUT PARAMETERS:
 !
@@ -341,8 +337,8 @@ CONTAINS
 !
     USE ErrCode_Mod
     USE ERROR_MOD,          ONLY : GEOS_CHEM_STOP
-    USE HCO_EMISLIST_MOD,   ONLY : HCO_GetPtr
-    USE HCO_INTERFACE_MOD,  ONLY : HcoState
+    USE HCO_Calc_Mod,       ONLY : HCO_EvalFld
+    USE HCO_State_GC_Mod,   ONLY : HcoState
     USE Input_Opt_Mod,      ONLY : OptInput
     USE State_Chm_Mod,      ONLY : ChmState
     USE State_Diag_Mod,     ONLY : DgnState
@@ -382,18 +378,21 @@ CONTAINS
 ! !LOCAL VARIABLES:
 !
     ! SAVEd scalars
-    LOGICAL, SAVE            :: FIRST = .TRUE.
+    LOGICAL, SAVE :: FIRST = .TRUE.
 
     ! Scalars
-    INTEGER                  :: I,     J,      L,  N,  NA, nAdvect
-    REAL(fp)                 :: BOXVL, DTCHEM, DT, LL, PL
+    INTEGER  :: I,     J,      L,  N,  NA, nAdvect
+    REAL(fp) :: BOXVL, DTCHEM, DT, LL, PL
 
     ! Arrays
-    REAL(fp)                 :: PP(State_Grid%NX,State_Grid%NY,State_grid%NZ, &
-                                   N_TAGGED)
+    REAL(fp), ALLOCATABLE, TARGET :: P24H(:,:,:)
+    REAL(fp), ALLOCATABLE         :: L24H(:,:,:)
+
+    REAL(fp) :: PP(State_Grid%NX,State_Grid%NY, State_grid%NZ, N_TAGGED)
 
     ! Pointers
-    REAL(fp),        POINTER :: Spc(:,:,:,:)
+    REAL(fp), POINTER :: Spc(:,:,:,:)
+    REAL(fp), POINTER :: P24Hptr(:,:,:)
 
     ! Strings
     CHARACTER(LEN=255) :: ErrMsg
@@ -441,22 +440,6 @@ CONTAINS
           RETURN
        ENDIF
 
-       ! Get pointer to O3 production
-       CALL HCO_GetPtr( HcoState, 'O3_PROD', P24H, RC )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Cannot get pointer to O3_PROD!'
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Get pointer to O3 loss
-       CALL HCO_GetPtr( HcoState, 'O3_LOSS', L24H, RC )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Cannot get pointer to O3_LOSS!'
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
        ! Get emissions timestep (seconds)
        TS_EMIS = HcoState%TS_EMIS
 
@@ -464,6 +447,33 @@ CONTAINS
        ! so that this won't be executed again
        FIRST    = .FALSE.
 
+    ENDIF
+
+    ! Evalulate O3 production from HEMCO
+    ALLOCATE( P24H(State_Grid%NX, State_Grid%NY, State_Grid%NZ), STAT=RC )
+    CALL GC_CheckVar( 'tagged_o3_mod.F: P24H', 0, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+    P24H = 0.0_fp
+    CALL HCO_EvalFld( HcoState, 'O3_PROD', P24H, RC )
+    IF ( RC /= GC_SUCCESS ) THEN
+       ErrMsg = 'Cannot get pointer to O3_PROD!'
+       CALL GC_Error( ErrMsg, RC, ThisLoc )
+       RETURN
+    ENDIF
+
+    ! Set pointer to O3 production
+    P24Hptr => P24H
+
+    ! Evaluate O3 loss from HEMCO
+    ALLOCATE( L24H(State_Grid%NX, State_Grid%NY, State_Grid%NZ), STAT=RC )
+    CALL GC_CheckVar( 'tagged_o3_mod.F: L24H', 0, RC )
+    IF ( RC /= GC_SUCCESS ) RETURN
+    L24H = 0.0_fp
+    CALL HCO_EvalFld( HcoState, 'O3_LOSS', L24H, RC )
+    IF ( RC /= GC_SUCCESS ) THEN
+       ErrMsg = 'Cannot get pointer to O3_LOSS!'
+       CALL GC_Error( ErrMsg, RC, ThisLoc )
+       RETURN
     ENDIF
 
     ! DT is the ratio of the chemistry and emission time step.
@@ -511,7 +521,7 @@ CONTAINS
           ! NOTE: We call this only when N==1 for optimal looping
           ! ALSO NOTE: PP is 4-D so it doesn't have to be PRIVATE.
           IF ( N == 1 ) THEN
-             CALL GET_REGIONAL_PO3(I, J, L, PP, State_Grid, State_Met)
+             CALL GET_REGIONAL_PO3(I, J, L, P24Hptr, PP, State_Grid, State_Met)
           ENDIF
 
           ! L(O3) is now in [1/m3] (ckeller, 9/17/2014)
@@ -530,7 +540,7 @@ CONTAINS
           ! Production of tagged O3 species [kg/s]
           IF ( State_Diag%Archive_Prod ) THEN
              IF ( PP(I,J,L,N) > 0e+0_fp ) THEN
-                State_Diag%Prod(I,J,L,N) = P24H(I,J,L) * BOXVL / TS_EMIS
+                State_Diag%Prod(I,J,L,N) = P24Hptr(I,J,L) * BOXVL / TS_EMIS
              ENDIF
           ENDIF
 
@@ -552,8 +562,23 @@ CONTAINS
 
     ENDDO
 
+    ! Deallocate P24H
+    IF ( ALLOCATED( P24H ) ) THEN
+       DEALLOCATE ( P24H, STAT=RC )
+       CALL GC_CheckVar( 'tagged_o3_mod.F: P24H', 2, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+    ENDIF
+
+    ! Deallocate L24H
+    IF ( ALLOCATED( L24H ) ) THEN
+       DEALLOCATE ( L24H, STAT=RC )
+       CALL GC_CheckVar( 'tagged_o3_mod.F: L24H', 2, RC )
+       IF ( RC /= GC_SUCCESS ) RETURN
+    ENDIF
+
     ! Free pointer
-    Spc => NULL()
+    Spc     => NULL()
+    P24Hptr => NULL()
 
   END SUBROUTINE CHEM_TAGGED_O3
 !EOC
@@ -611,6 +636,9 @@ CONTAINS
     ErrMsg  = ''
     ThisLoc = ' -> at Init_Tagged_O3 (in module GeosCore/tagged_o3_mod.F90)'
 
+    ! Exit immediately if this is a dry-run
+    IF ( Input_Opt%DryRun ) RETURN
+
     ! Define species ID flag
     id_O3Strat = Ind_('O3Strat')
 
@@ -629,30 +657,5 @@ CONTAINS
     ENDIF
 
   END SUBROUTINE INIT_TAGGED_O3
-!EOC
-!------------------------------------------------------------------------------
-!                  GEOS-Chem Global Chemical Transport Model                  !
-!------------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: cleanup_tagged_o3
-!
-! !DESCRIPTION:Subroutine CLEANUP\_TAGGED\_O3 deallocates all module arrays.
-!\\
-!\\
-! !INTERFACE:
-!
-  SUBROUTINE CLEANUP_TAGGED_O3()
-!
-! !REVISION HISTORY:
-!  20 Aug 2003 - R. Yantosca - Initial version
-!  See https://github.com/geoschem/geos-chem for complete history
-!EOP
-!------------------------------------------------------------------------------
-!BOC
-    IF ( ASSOCIATED( P24H ) ) P24H => NULL()
-    IF ( ASSOCIATED( L24H ) ) L24H => NULL()
-
-  END SUBROUTINE CLEANUP_TAGGED_O3
 !EOC
 END MODULE TAGGED_O3_MOD

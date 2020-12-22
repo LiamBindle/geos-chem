@@ -23,7 +23,6 @@ MODULE POPS_MOD
 !
 ! !PUBLIC MEMBER FUNCTIONS:
 !
-  PUBLIC :: GetPopsDiagsFromHemco
   PUBLIC :: ChemPOPs
   PUBLIC :: Init_POPs
   PUBLIC :: Cleanup_POPs
@@ -94,401 +93,6 @@ CONTAINS
 !------------------------------------------------------------------------------
 !BOP
 !
-! !IROUTINE: GetPOPsDiagsfromHemco
-!
-! !DESCRIPTION: Copies manually-archived diagnostic values for the POPs
-!  specialty simulation from the HEMCO state object into the relevant fields
-!  of the State\_Diag object.
-!\\
-!\\
-! !INTERFACE:
-!
-  SUBROUTINE GetPopsDiagsFromHemco( Input_Opt, State_Diag, RC )
-!
-! !USES:
-!
-    USE ErrCode_Mod
-    USE HCO_Interface_Mod,  ONLY : GetHcoDiagn
-    USE HCO_Interface_Mod,  ONLY : HcoState
-    USE Input_Opt_Mod,      ONLY : OptInput
-    USE State_Diag_Mod,     ONLY : DgnState
-!
-! !INPUT PARAMETERS:
-!
-    TYPE(OptInput), INTENT(IN)    :: Input_Opt   ! Input Options object
-!
-! !INPUT/OUTPUT PARAMETERS:
-!
-    TYPE(DgnState), INTENT(INOUT) :: State_Diag  ! Diagnostics State object
-!
-! !OUTPUT PARAMETERS:
-!
-    INTEGER,        INTENT(OUT)   :: RC          ! Success or failure?
-!
-! !REMARKS:
-!  This routine should be called from EMISSIONS_RUN.  It does not add any
-!  emissions for the POPS simulation per se.  But because several POPs
-!  diagnostics are archived via HEMCO, we need to copy information out
-!  of the HEMCO state and into the relevant fields of State_Diag.
-!
-! !REVISION HISTORY:
-!  15 Oct 2018 - R. Yantosca - Initial version
-!  See https://github.com/geoschem/geos-chem for complete history
-!EOP
-!------------------------------------------------------------------------------
-!BOC
-!
-! !LOCAL VARIABLES:
-!
-    ! Strings
-    CHARACTER(LEN=63)  :: DgnName
-    CHARACTER(LEN=255) :: ErrMsg
-    CHARACTER(LEN=255) :: ThisLoc
-
-    ! Pointers
-    REAL(f4), POINTER  :: Ptr2D(:,:)
-
-    !=================================================================
-    ! GetPopsDiagsFromHemco begins here!
-    !=================================================================
-
-    ! Initialize
-    RC      = GC_SUCCESS
-    ErrMsg  = ''
-    ThisLoc = '-> at GetPopsDiagsFromHemco (in module GeosCore/pops_mod.F90)'
-
-    !=================================================================
-    ! %%%%% HISTORY (aka netCDF diagnostics) %%%%%
-    !
-    ! Get pointers to the POPs diagnostics that are tracked by HEMCO
-    ! and then attach them to fields of the State_Diag array.
-    !
-    ! NOTE: The diagnostic names (which start with GCPOPS) have
-    ! to match those in HEMCO/Extensions/hcox_gc_POPS_mod.F90.
-    !=================================================================
-
-    !-----------------------------------------------------------------
-    ! Primary POPPOCPO emissions
-    !-----------------------------------------------------------------
-    IF ( State_Diag%Archive_EmisPOPPOCPO ) THEN
-
-       ! Get pointer from HEMCO diagnostics
-       DgnName = 'GCPOPS_POPPOCPO_SOURCE'
-       CALL GetHcoDiagn( DgnName, .TRUE., RC, Ptr2D=Ptr2D )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Could not find HEMCO field: ' // TRIM( DgnName )
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Copy into State_Diag
-       State_Diag%EmisPOPPOCPO = Ptr2D
-
-       ! Free Pointer
-       Ptr2D => NULL()
-    ENDIF
-
-    !-----------------------------------------------------------------
-    ! Primary POPPBCPO emissions
-    !-----------------------------------------------------------------
-    IF ( State_Diag%Archive_EmisPOPPBCPO ) THEN
-
-       ! Get pointer from HEMCO
-       DgnName = 'GCPOPS_POPPBCPO_SOURCE'
-       CALL GetHcoDiagn( DgnName, .TRUE., RC, Ptr2D=Ptr2D )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Could not find HEMCO field: ' // TRIM( DgnName )
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Copy into State_Diag
-       State_Diag%EmisPOPPBCPO = Ptr2D
-
-       ! Free pointer
-       Ptr2D => NULL()
-    ENDIF
-
-    !-----------------------------------------------------------------
-    ! Primary POPG emissions
-    !-----------------------------------------------------------------
-    IF ( State_Diag%Archive_EmisPOPG ) THEN
-
-       ! Get pointer from HEMCO
-       DgnName = 'GCPOPS_POPG_SOURCE'
-       CALL GetHcoDiagn( DgnName, .TRUE., RC, Ptr2D=Ptr2D )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Could not find HEMCO field: ' // TRIM( DgnName )
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Copy into State_Diag
-       State_Diag%EmisPOPG = Ptr2D
-
-       ! Free Pointer
-       Ptr2D => NULL()
-    ENDIF
-
-    !-----------------------------------------------------------------
-    ! Secondary POPG emissions from soil
-    !-----------------------------------------------------------------
-    IF ( State_Diag%Archive_EmisPOPGfromSoil ) THEN
-
-       ! Get pointer from HEMCO
-       DgnName = 'GCPOPS_POPG_SOIL'
-       CALL GetHcoDiagn( DgnName, .TRUE., RC, Ptr2D=Ptr2D )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Could not find HEMCO field: ' // TRIM( DgnName )
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Copy into State_Diag
-       State_Diag%EmisPOPGfromSoil = Ptr2D
-
-       ! Free pointer
-       Ptr2D => NULL()
-    ENDIF
-
-    !-----------------------------------------------------------------
-    ! Secondary POPG emissions from lakes
-    !-----------------------------------------------------------------
-    IF ( State_Diag%Archive_EmisPOPGfromLake ) THEN
-
-       ! Get pointer from HEMCO
-       DgnName = 'GCPOPS_POPG_LAKE'
-       CALL GetHcoDiagn( DgnName, .TRUE., RC, Ptr2D=Ptr2D )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Could not find HEMCO field: ' // TRIM( DgnName )
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Copy into State_Diag
-       State_Diag%EmisPOPGfromLake = Ptr2D
-
-       ! Free pointer
-       Ptr2D => NULL()
-    ENDIF
-
-    !-----------------------------------------------------------------
-    ! Secondary POPG emissions from leaves
-    !-----------------------------------------------------------------
-    IF ( State_Diag%Archive_EmisPOPGfromLeaf ) THEN
-
-       ! Get pointer from HEMCO
-       DgnName = 'GCPOPS_POPG_LEAF'
-       CALL GetHcoDiagn( DgnName, .TRUE., RC, Ptr2D=Ptr2D )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Could not find HEMCO field: ' // TRIM( DgnName )
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Copy into State_Diag
-       State_Diag%EmisPOPGfromLeaf= Ptr2D
-
-       ! Free pointer
-       Ptr2D => NULL()
-    ENDIF
-
-    !-----------------------------------------------------------------
-    ! Positive POPG soil flux (from soil to air)
-    !-----------------------------------------------------------------
-    IF ( State_Diag%Archive_FluxPOPGfromSoilToAir ) THEN
-
-       ! Get pointer from HEMCO
-       DgnName = 'GCPOPS_SOIL2AIR'
-       CALL GetHcoDiagn( DgnName, .TRUE., RC, Ptr2D=Ptr2D )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Could not find HEMCO field: ' // TRIM( DgnName )
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Copy into State_Diag
-       State_Diag%FluxPOPGfromSoilToAir = Ptr2D
-
-       ! Free pointer
-       Ptr2D => NULL()
-    ENDIF
-
-    !-----------------------------------------------------------------
-    ! Negative POPG soil flux (from air to soil)
-    !-----------------------------------------------------------------
-    IF ( State_Diag%Archive_FluxPOPGfromAirToSoil ) THEN
-
-       ! Get pointer from HEMCO
-       DgnName = 'GCPOPS_AIR2SOIL'
-       CALL GetHcoDiagn( DgnName, .TRUE., RC, Ptr2D=Ptr2D )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Could not find HEMCO field: ' // TRIM( DgnName )
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Copy into State_Diag
-       State_Diag%FluxPOPGfromAirToSoil = Ptr2D
-
-       ! Free pointer
-       Ptr2D => NULL()
-    ENDIF
-
-    !-----------------------------------------------------------------
-    ! Positive POPG lake flux (from lake to air)
-    !-----------------------------------------------------------------
-    IF ( State_Diag%Archive_FluxPOPGfromLakeToAir ) THEN
-
-       ! Get pointer from HEMCO
-       DgnName = 'GCPOPS_LAKE2AIR'
-       CALL GetHcoDiagn( DgnName, .TRUE., RC, Ptr2D=Ptr2D )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Could not find HEMCO field: ' // TRIM( DgnName )
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Copy into State_Diag
-       State_Diag%FluxPOPGfromLakeToAir = Ptr2D
-
-       ! Free pointer
-       Ptr2D => NULL()
-    ENDIF
-
-    !-----------------------------------------------------------------
-    ! Negative POPG lake flux (from air to soil)
-    !-----------------------------------------------------------------
-    IF ( State_Diag%Archive_FluxPOPGfromAirToLake ) THEN
-
-       ! Get pointer from HEMCO
-       DgnName = 'GCPOPS_AIR2LAKE'
-       CALL GetHcoDiagn( DgnName, .TRUE., RC, Ptr2D=Ptr2D )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Could not find HEMCO field: ' // TRIM( DgnName )
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Copy into State_Diag
-       State_Diag%FluxPOPGfromAirToLake = Ptr2D
-
-       ! Free pointer
-       Ptr2D => NULL()
-    ENDIF
-
-    !-----------------------------------------------------------------
-    ! Positive POPG leaf flux (from leaves to air)
-    !-----------------------------------------------------------------
-    IF ( State_Diag%Archive_FluxPOPGfromLeafToAir ) THEN
-
-       ! Get pointer from HEMCO
-       DgnName = 'GCPOPS_LEAF2AIR'
-       CALL GetHcoDiagn( DgnName, .TRUE., RC, Ptr2D=Ptr2D )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Could not find HEMCO field: ' // TRIM( DgnName )
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Copy into State_Diag
-       State_Diag%FluxPOPGfromLeafToAir = Ptr2D
-
-       ! Free pointer
-       Ptr2D => NULL()
-    ENDIF
-
-    !-----------------------------------------------------------------
-    ! Negative POPG leaf flux (from air to leaves)
-    !-----------------------------------------------------------------
-    IF ( State_Diag%Archive_FluxPOPGfromAirToLeaf ) THEN
-
-       ! Get pointer from HEMCO
-       DgnName = 'GCPOPS_AIR2LEAF'
-       CALL GetHcoDiagn( DgnName, .TRUE., RC, Ptr2D=Ptr2D )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Could not find HEMCO field: ' // TRIM( DgnName )
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Copy into State_Diag
-       State_Diag%FluxPOPGfromAirToLeaf = Ptr2D
-
-       ! Free pointer
-       Ptr2D => NULL()
-    ENDIF
-
-    !-----------------------------------------------------------------
-    ! Fugacity ratio: soil/air
-    !-----------------------------------------------------------------
-    IF ( State_Diag%Archive_FugacitySoilToAir ) THEN
-
-       ! Get pointer from HEMCO
-       DgnName = 'GCPOPS_SOILAIR_FUG'
-       CALL GetHcoDiagn( DgnName, .TRUE., RC, Ptr2D=Ptr2D )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Could not find HEMCO field: ' // TRIM( DgnName )
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Copy into State_Diag
-       State_Diag%FugacitySoilToAir = Ptr2D
-
-       ! Free pointer
-       Ptr2D => NULL()
-    ENDIF
-
-    !-----------------------------------------------------------------
-    ! Fugacity ratio: lake/air
-    !-----------------------------------------------------------------
-    IF ( State_Diag%Archive_FugacityLakeToAir ) THEN
-
-       ! Get pointer from HEMCO
-       DgnName = 'GCPOPS_LAKEAIR_FUG'
-       CALL GetHcoDiagn( DgnName, .TRUE., RC, Ptr2D=Ptr2D )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Could not find HEMCO field: ' // TRIM( DgnName )
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Copy into State_Diag
-       State_Diag%FugacityLakeToAir = Ptr2D
-
-       ! Free pointer
-       Ptr2D => NULL()
-    ENDIF
-
-    !-----------------------------------------------------------------
-    ! Fugacity ratio: leaf/air
-    !-----------------------------------------------------------------
-    IF ( State_Diag%Archive_FugacityLeafToAir ) THEN
-
-       ! Get pointer from HEMCO
-       DgnName = 'GCPOPS_LEAFAIR_FUG'
-       CALL GetHcoDiagn( DgnName, .TRUE., RC, Ptr2D=Ptr2D )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Could not find HEMCO field: ' // TRIM( DgnName )
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-
-       ! Copy into State_Diag
-       State_Diag%FugacityLeafToAir = Ptr2D
-
-       ! Free pointer
-       Ptr2D   => NULL()
-    ENDIF
-
-  END SUBROUTINE GetPopsDiagsFromHemco
-!EOC
-!------------------------------------------------------------------------------
-!                  GEOS-Chem Global Chemical Transport Model                  !
-!------------------------------------------------------------------------------
-!BOP
-!
 ! !IROUTINE:  chempops
 !
 ! !DESCRIPTION: Subroutine CHEMPOPS is the driver routine for POPs chemistry
@@ -504,8 +108,7 @@ CONTAINS
 !
     USE ErrCode_Mod
     USE Error_Mod,          ONLY : DEBUG_MSG
-    USE HCO_Interface_Mod,  ONLY : GetHcoDiagn
-    USE HCO_Interface_Mod,  ONLY : HcoState
+    USE HCO_State_GC_Mod,   ONLY : HcoState
     USE HCO_EmisList_Mod,   ONLY : HCO_GetPtr
     USE Input_Opt_Mod,      ONLY : OptInput
     USE State_Chm_Mod,      ONLY : ChmState
@@ -548,7 +151,7 @@ CONTAINS
     CHARACTER(LEN=512) :: ErrMsg
 
     ! Pointers
-    REAL(fp),      POINTER  :: DEPSAV(:,:,:  )
+    REAL(fp),      POINTER  :: DepFreq(:,:,:  )
 
     !=================================================================
     ! CHEMPOPS begins here!
@@ -561,7 +164,7 @@ CONTAINS
     ThisLoc  = ' -> at ChemPops (in module GeosCore/pops_mod.F90)'
 
     ! Point to columns of derived-type object fields (hplin, 12/1/18)
-    DEPSAV            => State_Chm%DryDepSav
+    DepFreq            => State_Chm%DryDepFreq
 
     !-----------------------------------------------------------------
     ! %%%%% HISTORY (aka netCDF diagnostics) %%%%%
@@ -662,17 +265,17 @@ CONTAINS
             dd_POPP_BCPO > 0 ) THEN
 
           ! Dry deposition active for both POP-Gas and POP-Particle;
-          ! pass drydep frequency to CHEM_POPGP (NOTE: DEPSAV has units 1/s)
+          ! pass drydep frequency to CHEM_POPGP (NOTE: DepFreq has units 1/s)
           CALL CHEM_POPGP( Input_Opt,                &
                            State_Chm,                &
                            State_Diag,               &
                            State_Grid,               &
                            State_Met,                &
-                           DEPSAV(:,:,dd_POPG),      &
-                           DEPSAV(:,:,dd_POPP_OCPO), &
-                           DEPSAV(:,:,dd_POPP_OCPI), &
-                           DEPSAV(:,:,dd_POPP_BCPO), &
-                           DEPSAV(:,:,dd_POPP_BCPI), &
+                           DepFreq(:,:,dd_POPG),      &
+                           DepFreq(:,:,dd_POPP_OCPO), &
+                           DepFreq(:,:,dd_POPP_OCPI), &
+                           DepFreq(:,:,dd_POPP_BCPO), &
+                           DepFreq(:,:,dd_POPP_BCPI), &
                            RC)
 
        ELSEIF ( dd_POPG      >  0 .and. &
@@ -685,9 +288,9 @@ CONTAINS
                            State_Diag,               &
                            State_Grid,               &
                            State_Met,                &
-                           DEPSAV(:,:,dd_POPG),      &
-                           DEPSAV(:,:,dd_POPP_OCPO), &
-                           DEPSAV(:,:,dd_POPP_OCPI), &
+                           DepFreq(:,:,dd_POPG),      &
+                           DepFreq(:,:,dd_POPP_OCPO), &
+                           DepFreq(:,:,dd_POPP_OCPI), &
                            ZERO_DVEL,                &
                            ZERO_DVEL,                &
                            RC )
@@ -702,11 +305,11 @@ CONTAINS
                            State_Diag,               &
                            State_Grid,               &
                            State_Met,                &
-                           DEPSAV(:,:,dd_POPG),      &
+                           DepFreq(:,:,dd_POPG),      &
                            ZERO_DVEL,                &
                            ZERO_DVEL,                &
-                           DEPSAV(:,:,dd_POPP_BCPO), &
-                           DEPSAV(:,:,dd_POPP_BCPI), &
+                           DepFreq(:,:,dd_POPP_BCPO), &
+                           DepFreq(:,:,dd_POPP_BCPI), &
                            RC )
 
        ELSEIF ( dd_POPG      >  0 .and. &
@@ -719,7 +322,7 @@ CONTAINS
                            State_Diag,          &
                            State_Grid,          &
                            State_Met,           &
-                           DEPSAV(:,:,dd_POPG), &
+                           DepFreq(:,:,dd_POPG), &
                            ZERO_DVEL,           &
                            ZERO_DVEL,           &
                            ZERO_DVEL,           &
@@ -737,10 +340,10 @@ CONTAINS
                            State_Grid,               &
                            State_Met,                &
                            ZERO_DVEL,                &
-                           DEPSAV(:,:,dd_POPP_OCPO), &
-                           DEPSAV(:,:,dd_POPP_OCPI), &
-                           DEPSAV(:,:,dd_POPP_BCPO), &
-                           DEPSAV(:,:,dd_POPP_BCPI), &
+                           DepFreq(:,:,dd_POPP_OCPO), &
+                           DepFreq(:,:,dd_POPP_OCPI), &
+                           DepFreq(:,:,dd_POPP_BCPO), &
+                           DepFreq(:,:,dd_POPP_BCPI), &
                            RC )
 
        ELSEIF ( dd_POPG      <= 0 .and. &
@@ -754,8 +357,8 @@ CONTAINS
                            State_Grid,               &
                            State_Met,                &
                            ZERO_DVEL,                &
-                           DEPSAV(:,:,dd_POPP_OCPO), &
-                           DEPSAV(:,:,dd_POPP_OCPI), &
+                           DepFreq(:,:,dd_POPP_OCPO), &
+                           DepFreq(:,:,dd_POPP_OCPI), &
                            ZERO_DVEL,                &
                            ZERO_DVEL,                &
                            RC )
@@ -773,8 +376,8 @@ CONTAINS
                            ZERO_DVEL,                &
                            ZERO_DVEL,                &
                            ZERO_DVEL,                &
-                           DEPSAV(:,:,dd_POPP_BCPO), &
-                           DEPSAV(:,:,dd_POPP_BCPI), &
+                           DepFreq(:,:,dd_POPP_BCPO), &
+                           DepFreq(:,:,dd_POPP_BCPI), &
                            RC )
 
        ELSE
@@ -798,7 +401,7 @@ CONTAINS
     IF ( prtDebug ) CALL DEBUG_MSG( 'CHEMPOPS: a CHEM_GASPART' )
 
     ! Nullify pointers
-    NULLIFY( DEPSAV )
+    NULLIFY( DepFreq )
 
   END SUBROUTINE CHEMPOPS
 !EOC
@@ -1863,8 +1466,8 @@ CONTAINS
 
              ! Amt of POPG lost to drydep [molec/cm2/s]
              DEP_DRY_FLXG = DEP_POPG_DRY * AVO &
-                            / ( 1.e-3_fp * ThisSpc%EmMW_g ) &
-                            / ( AREA_CM2 * DTCHEM         )
+                            / ( 1.e-3_fp * ThisSpc%MW_g ) &
+                            / ( AREA_CM2 * DTCHEM       )
 
              ! Save into State_Diag%DryDepChm
              State_Diag%DryDepChm(I,J,id_POPG) = &
@@ -1884,8 +1487,8 @@ CONTAINS
 
              ! Amt of POPPOCPO lost to drydep [molec/cm2/s]
              DEP_DRY_FLXP_OCPO = DEP_POPP_OCPO_DRY * AVO &
-                                 / ( 1.e-3_fp * ThisSpc%EmMW_g ) &
-                                 / ( AREA_CM2 * DTCHEM         )
+                                 / ( 1.e-3_fp * ThisSpc%MW_g ) &
+                                 / ( AREA_CM2 * DTCHEM       )
 
              ! Save into State_Diag%DryDepChm
              State_Diag%DryDepChm(I,J,id_POPPOCPO) = &
@@ -1905,8 +1508,8 @@ CONTAINS
 
              ! Amt of POPPOCPO lost to drydep [molec/cm2/s]
              DEP_DRY_FLXP_OCPI = DEP_POPP_OCPI_DRY * AVO &
-                                 / ( 1.e-3_fp * ThisSpc%EmMW_g ) &
-                                 / ( AREA_CM2 * DTCHEM         )
+                                 / ( 1.e-3_fp * ThisSpc%MW_g ) &
+                                 / ( AREA_CM2 * DTCHEM       )
 
              ! Save into State_Diag%DryDepChm
              State_Diag%DryDepChm(I,J,id_POPPOCPI) = &
@@ -1926,8 +1529,8 @@ CONTAINS
 
              ! Amt of POPPBCPO lost to drydep [molec/cm2/s]
              DEP_DRY_FLXP_BCPO = DEP_POPP_BCPO_DRY * AVO &
-                                 / ( 1.e-3_fp * ThisSpc%EmMW_g ) &
-                                 / ( AREA_CM2 * DTCHEM         )
+                                 / ( 1.e-3_fp * ThisSpc%MW_g ) &
+                                 / ( AREA_CM2 * DTCHEM       )
 
              ! Save into State_Diag%DryDepChm
              State_Diag%DryDepChm(I,J,id_POPPBCPO) = &
@@ -1947,8 +1550,8 @@ CONTAINS
 
              ! Amt of POPPBCPI lost to drydep [molec/cm2/s]
              DEP_DRY_FLXP_BCPI = DEP_POPP_BCPI_DRY * AVO &
-                                 / ( 1.e-3_fp * ThisSpc%EmMW_g ) &
-                                 / ( AREA_CM2 * DTCHEM         )
+                                 / ( 1.e-3_fp * ThisSpc%MW_g ) &
+                                 / ( AREA_CM2 * DTCHEM       )
 
              ! Save into State_Diag%DryDepChm
              State_Diag%DryDepChm(I,J,id_POPPBCPI) = &
@@ -2468,6 +2071,9 @@ CONTAINS
     ! Assume success
     RC    = GC_SUCCESS
 
+    ! Exit if this is a dry-run
+    IF ( Input_Opt%DryRun ) RETURN
+
     !=================================================================
     ! Allocate and initialize arrays
     ! NOTE: These might have to go into state_chm_mod.F90 eventually
@@ -2500,18 +2106,78 @@ CONTAINS
     !=================================================================
     id_POPG      = Ind_('POPG'        )
     dd_POPG      = Ind_('POPG',    'D')
+    IF ( id_POPG < 0 ) THEN
+       id_POPG   = Ind_('POPG_BaP')
+       dd_POPG   = Ind_('POPG_BaP','D')
+    ENDIF
+    IF ( id_POPG < 0 ) THEN
+       id_POPG   = Ind_('POPG_PHE')
+       dd_POPG   = Ind_('POPG_PHE','D')
+    ENDIF
+    IF ( id_POPG < 0 ) THEN
+       id_POPG   = Ind_('POPG_PYR')
+       dd_POPG   = Ind_('POPG_PYR','D')
+    ENDIF
 
     id_POPPOCPO  = Ind_('POPPOCPO'    )
     dd_POPP_OCPO = Ind_('POPPOCPO','D')
+    IF ( id_POPPOCPO < 0 ) THEN
+       id_POPPOCPO   = Ind_('POPPOCPO_BaP')
+       dd_POPP_OCPO  = Ind_('POPPOCPO_BaP','D')
+    ENDIF
+    IF ( id_POPPOCPO < 0 ) THEN
+       id_POPPOCPO   = Ind_('POPPOCPO_PHE')
+       dd_POPP_OCPO  = Ind_('POPPOCPO_PHE','D')
+    ENDIF
+    IF ( id_POPPOCPO < 0 ) THEN
+       id_POPPOCPO   = Ind_('POPPOCPO_PYR')
+       dd_POPP_OCPO  = Ind_('POPPOCPO_PYR','D')
+    ENDIF
 
     id_POPPBCPO  = Ind_('POPPBCPO'    )
     dd_POPP_BCPO = Ind_('POPPBCPO','D')
+    IF ( id_POPPBCPO < 0 ) THEN
+       id_POPPBCPO   = Ind_('POPPBCPO_BaP')
+       dd_POPP_BCPO  = Ind_('POPPBCPO_BaP','D')
+    ENDIF
+    IF ( id_POPPBCPO < 0 ) THEN
+       id_POPPBCPO   = Ind_('POPPBCPO_PHE')
+       dd_POPP_BCPO  = Ind_('POPPBCPO_PHE','D')
+    ENDIF
+    IF ( id_POPPBCPO < 0 ) THEN
+       id_POPPBCPO   = Ind_('POPPBCPO_PYR')
+       dd_POPP_BCPO  = Ind_('POPPBCPO_PYR','D')
+    ENDIF
 
     id_POPPOCPI  = Ind_('POPPOCPI'    )
     dd_POPP_OCPI = Ind_('POPPOCPI','D')
+    IF ( id_POPPOCPI < 0 ) THEN
+       id_POPPOCPI   = Ind_('POPPOCPI_BaP')
+       dd_POPP_OCPI  = Ind_('POPPOCPI_BaP','D')
+    ENDIF
+    IF ( id_POPPOCPI < 0 ) THEN
+       id_POPPOCPI   = Ind_('POPPOCPI_PHE')
+       dd_POPP_OCPI  = Ind_('POPPOCPI_PHE','D')
+    ENDIF
+    IF ( id_POPPOCPI < 0 ) THEN
+       id_POPPOCPI   = Ind_('POPPOCPI_PYR')
+       dd_POPP_OCPI  = Ind_('POPPOCPI_PYR','D')
+    ENDIF
 
     id_POPPBCPI  = Ind_('POPPBCPI'    )
     dd_POPP_BCPI = Ind_('POPPBCPI','D')
+    IF ( id_POPPBCPI < 0 ) THEN
+       id_POPPBCPI   = Ind_('POPPBCPI_BaP')
+       dd_POPP_BCPI  = Ind_('POPPBCPI_BaP','D')
+    ENDIF
+    IF ( id_POPPBCPI < 0 ) THEN
+       id_POPPBCPI   = Ind_('POPPBCPI_PHE')
+       dd_POPP_BCPI  = Ind_('POPPBCPI_PHE','D')
+    ENDIF
+    IF ( id_POPPBCPI < 0 ) THEN
+       id_POPPBCPI   = Ind_('POPPBCPI_PYR')
+       dd_POPP_BCPI  = Ind_('POPPBCPI_PYR','D')
+    ENDIF
 
   END SUBROUTINE INIT_POPS
 !EOC

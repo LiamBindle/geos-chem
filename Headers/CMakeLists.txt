@@ -12,8 +12,10 @@ add_library(Headers STATIC EXCLUDE_FROM_ALL
 	inquireMod.F90
 	physconstants.F90
 	precision_mod.F90
+	qfyaml_mod.F90
 	registry_mod.F90
 	registry_params_mod.F90
+	roundoff_mod.F90
 	species_database_mod.F90
 	species_mod.F90
 	state_chm_mod.F90
@@ -23,8 +25,7 @@ add_library(Headers STATIC EXCLUDE_FROM_ALL
 )
 target_link_libraries(Headers
 	PUBLIC
-	$<$<STREQUAL:${MECH},SOA_SVPOA>:KPPFirstPass_SOA_SVPOA>
-	$<$<STREQUAL:${MECH},Standard>:KPPFirstPass_Standard>
-	$<$<STREQUAL:${MECH},Tropchem>:KPPFirstPass_Tropchem>
+	$<$<STREQUAL:${MECH},fullchem>:KPPFirstPass_fullchem>
+	$<$<STREQUAL:${MECH},custom>:KPPFirstPass_custom>
 )
 

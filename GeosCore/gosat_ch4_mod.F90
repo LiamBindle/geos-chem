@@ -14,10 +14,12 @@ MODULE GOSAT_CH4_MOD
 !
 ! !USES:
 !
+#if !defined( MODEL_CESM )
   USE m_netcdf_io_open       ! netCDF open
   USE m_netcdf_io_get_dimlen ! netCDF dimension queries
   USE m_netcdf_io_read       ! netCDF data reads
   USE m_netcdf_io_close      ! netCDF close
+#endif
   USE PRECISION_MOD          ! For GEOS-Chem Precision (fp)
 
   IMPLICIT NONE
@@ -77,6 +79,7 @@ MODULE GOSAT_CH4_MOD
 
 CONTAINS
 !EOC
+#if !defined( MODEL_CESM )
 !------------------------------------------------------------------------------
 !                  GEOS-Chem Global Chemical Transport Model                  !
 !------------------------------------------------------------------------------
@@ -337,6 +340,7 @@ CONTAINS
     
   END SUBROUTINE READ_GOS_CH4_OBS
 !EOC
+#endif
 !------------------------------------------------------------------------------
 !                  GEOS-Chem Global Chemical Transport Model                  !
 !------------------------------------------------------------------------------
@@ -356,6 +360,7 @@ CONTAINS
 !
 ! !USES:
 !
+    USE ErrCode_Mod
     USE ERROR_MOD,          ONLY : IT_IS_NAN
     USE ERROR_MOD,          ONLY : IT_IS_FINITE
     USE GC_GRID_MOD,        ONLY : GET_IJ
@@ -366,13 +371,17 @@ CONTAINS
     USE State_Chm_Mod,      ONLY : ChmState, Ind_
     USE State_Grid_Mod,     ONLY : GrdState
     USE State_Met_Mod,      ONLY : MetState
+    USE UnitConv_Mod,       ONLY : Convert_Spc_Units
 !
 ! !INPUT PARAMETERS:
 !
-    TYPE(OptInput), INTENT(IN) :: Input_Opt   ! Input options
-    TYPE(ChmState), INTENT(IN) :: State_Chm   ! Chemistry State object
-    TYPE(GrdState), INTENT(IN) :: State_Grid  ! Grid State object
-    TYPE(MetState), INTENT(IN) :: State_Met   ! Meteorology State object
+    TYPE(OptInput), INTENT(IN)    :: Input_Opt   ! Input options
+    TYPE(GrdState), INTENT(IN)    :: State_Grid  ! Grid State object
+    TYPE(MetState), INTENT(IN)    :: State_Met   ! Meteorology State object
+!
+! !INPUT/OUTPUT PARAMETERS:
+!
+    TYPE(ChmState), INTENT(INOUT) :: State_Chm   ! Chemistry State object
 !
 ! !REVISION HISTORY:
 !  16 Jun 2017 - M. Sulprizio- Initial version based on GOSAT CH4 observation
@@ -396,7 +405,7 @@ CONTAINS
     INTEGER            :: L,       LL,     LGOS
     INTEGER            :: JLOOP,   NOBS,   IND
     INTEGER            :: INDS(MAXGOS)
-    REAL(fp)           :: REF_DATE, TIME
+    REAL(fp)           :: REF_DATE
     REAL(fp)           :: GC_PRES(State_Grid%NZ)
     REAL(fp)           :: GC_PEDGE(State_Grid%NZ+1)
     REAL(fp)           :: GC_CH4_NATIVE(State_Grid%NZ)
@@ -423,6 +432,7 @@ CONTAINS
     REAL(fp)           :: FORCE
     REAL(fp)           :: DIFF
     REAL(fp)           :: S_OBS
+    REAL(f8)           :: TIME
 
     ! --- zyz --- Sept 19, 2018
     ! fix the problem that some GOSAT record has negative pressure
@@ -434,12 +444,21 @@ CONTAINS
     INTEGER            :: IOS
     INTEGER, SAVE      :: TotalObs = 0
     CHARACTER(LEN=255) :: FILENAME
+    CHARACTER(LEN=63)  :: OrigUnit
+    CHARACTER(LEN=255) :: ThisLoc
+    CHARACTER(LEN=512) :: ErrMsg
+    INTEGER            :: RC
 
     !=================================================================
     ! CALC_GOS_CH4_FORCE begins here!
     !=================================================================
 
     print*, '     - CALC_GOS_CH4_FORCE '
+
+    ! Initialize
+    RC      = GC_SUCCESS
+    ErrMsg  = ''
+    ThisLoc = ' -> at CALC_GOS_CH4_FORCE (in gosat_ch4_mod.F)'
 
     ! Initialize species ID flag
     id_CH4     = Ind_('CH4'       )
@@ -487,7 +506,12 @@ CONTAINS
 
        ! Read the GOS CH4 file for this day
        YYYYMMDD = 1d4*GET_YEAR() + 1d2*GET_MONTH() + GET_DAY()
+#if defined( MODEL_CESM )
+       print*, "DIE IN GOSAT_CH4_MOD.F! DEAL WITH READ_GOS_CH4_OBS"
+       CALL EXIT(1)
+#else
        CALL READ_GOS_CH4_OBS( YYYYMMDD, NGOS )
+#endif
 
        IF ( FIRST ) FIRST = .FALSE.
 
@@ -542,6 +566,14 @@ CONTAINS
     print*, ' for hour range: ', GET_HOUR(), GET_HOUR()+1
     print*, ' found # GOSAT observations: ', NOBS
 
+    ! Convert species units to [v/v] (mps, 6/12/2020)
+    CALL Convert_Spc_Units( Input_Opt, State_Chm, State_Grid, State_Met, &
+                            'v/v dry', RC,        OrigUnit=OrigUnit )
+    IF ( RC /= GC_SUCCESS ) THEN
+       ErrMsg = 'Unit conversion error (kg/kg dry -> v/v dry)'
+       CALL GC_Error( ErrMsg, RC, ThisLoc )
+       RETURN
+    ENDIF
 
     !! need to update this in order to do i/o with this loop parallel
     !!      ! Now do a parallel loop for analyzing data
@@ -692,10 +724,8 @@ CONTAINS
        ! Get CH4 values at native model resolution
        GC_CH4_NATIVE(:) = 0.0_fp
 
-       ! Get species concentrations
-       ! Convert from [kg/box] --> [v/v]
-       GC_CH4_NATIVE(:) = State_Chm%Species(I,J,:,id_CH4) * ( AIRMW / &
-                          State_Chm%SpcData(id_CH4)%Info%emMW_g )
+       ! Get species concentrations [v/v]
+       GC_CH4_NATIVE(:) = State_Chm%Species(I,J,:,id_CH4)
 
        ! Interpolate GC CH4 column to GOSAT grid
        ! Use L0 for lowest valid layer for GOSAT (zyz)
@@ -820,6 +850,15 @@ CONTAINS
 
     ! Update cost function
     COST_FUNC = COST_FUNC + SUM(NEW_COST(:))
+
+    ! Convert species units back to original unit (mps, 6/12/2020)
+    CALL Convert_Spc_Units( Input_Opt, State_Chm, State_Grid, State_Met, &
+                            OrigUnit,  RC )
+    IF ( RC /= GC_SUCCESS ) THEN
+       ErrMsg = 'Unit conversion error'
+       CALL GC_Error( ErrMsg, RC, ThisLoc )
+       RETURN
+    ENDIF
 
 282 FORMAT( I10,2x,I4,2x,I4,2x,F8.3,2x,F8.4,2x,I4,2x,I2,2x,I2,2x,I2, &
             2x,I2,2x,I2,2x,F12.3,2x,E12.6,2x,E12.6,2x,E12.6,2x,E12.6, &

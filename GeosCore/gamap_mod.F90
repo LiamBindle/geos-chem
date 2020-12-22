@@ -66,7 +66,6 @@ MODULE GAMAP_MOD
   INTEGER,           PARAMETER   :: MAXTRACER = 2 * MAX_TRACER
   INTEGER,           ALLOCATABLE :: NTRAC(:)
   INTEGER,           ALLOCATABLE :: INDEX(:,:)
-  INTEGER,           ALLOCATABLE :: MOLC(:,:)
   REAL*4,            ALLOCATABLE :: MWT(:,:)
   REAL*4,            ALLOCATABLE :: SCALE(:,:)
   CHARACTER(LEN=40), ALLOCATABLE :: NAME(:,:)
@@ -128,6 +127,9 @@ CONTAINS
     ! Assume success
     RC = GC_SUCCESS
     
+    ! Exit if this is a dry-run
+    IF ( Input_Opt%DryRun ) RETURN
+
     ! Allocate and initialize variables
     CALL INIT_GAMAP( Input_Opt, State_Chm, RC )
 
@@ -316,7 +318,6 @@ CONTAINS
     WRITE( IU_FILE,  125  )
     WRITE( IU_FILE,  130  )
     WRITE( IU_FILE,  135  )
-    WRITE( IU_FILE,  140  )
     WRITE( IU_FILE,  145  )
     WRITE( IU_FILE,  150  )
     WRITE( IU_FILE,  125  )
@@ -333,142 +334,140 @@ CONTAINS
 125 FORMAT( '#  --      (1X   )  1-character spacer'                 )
 130 FORMAT( '# FULLNAME (A30  )  Full tracer name (up to 30 chars)'  )
 135 FORMAT( '# MOLWT    (E10.0)  Molecular weight (kg/mole)'         )
-140 FORMAT( '# C        (I3   )  For HC''s: # moles C/moles tracer;',&
-            ' otherwise set=1'                                       )
 145 FORMAT( '# TRACER   (I9   )  Tracer number (up to 9 digits)'     )
 150 FORMAT( '# SCALE    (E10.3)  Standard scale factor to convert',  &
             ' to unit given below'                                   )
 155 FORMAT( '# UNIT     (A40  )  Unit string',                 /,'#' )
 
-    !-------------------------------------
-    ! 0: Tracers [ppbv]
-    !-------------------------------------
-
-    ! Write separator line
-    CALL WRITE_SEPARATOR( IU_FILE, 0 )
-
-    ! Loop over tracers
-    DO T = 1, NTRAC(45)
-
-       ! GAMAP tracer number
-       N = ( SPACING * 0 ) + T
-
-       ! Write tracers [ppbv] to "tracerinfo.dat" file
-       CALL WRITE_TINFO( IU_FILE, NAME(T,45), FNAME(T,45), MWT(T,45), &
-                         MOLC(T,45), SCALE(T,45), UNIT(T,45), N )
-    ENDDO
-
-    !-------------------------------------
-    ! SPACING*1: Tracers [molec/cm2/s]
-    !-------------------------------------
-
-    ! Write separator line
-    CALL WRITE_SEPARATOR( IU_FILE, 100 )
-
-    ! Loop over tracers
-    DO T = 1, NTRAC(45)
-
-       ! GAMAP tracer number
-       N = ( SPACING * 1 ) + T
-
-       ! New scale
-       SCALE_NEW = 1.0e0
-
-       ! New unit
-       IF ( TRIM( UNIT(T,45) ) == 'ppbC' ) THEN
-          UNIT_NEW = 'atoms C/cm2/s'
-       ELSE
-          UNIT_NEW = 'molec/cm2/s'
-       ENDIF
-
-       ! Write tracers [molec/cm2/s] to "tracerinfo.dat"
-       CALL WRITE_TINFO( IU_FILE, NAME(T,45), FNAME(T,45), MWT(T,45), &
-                         MOLC(T,45), SCALE_NEW,   UNIT_NEW, N )
-    ENDDO
-
-    !-------------------------------------
-    ! SPACING*2: Tracers [molec/cm2]
-    !-------------------------------------
-
-    ! Write separator line
-    CALL WRITE_SEPARATOR( IU_FILE, 200 )
-
-    ! Loop over tracers
-    DO T = 1, NTRAC(45)
-
-       ! GAMAP tracer number
-       N = ( SPACING * 2 ) + T
-
-       ! New scale
-       SCALE_NEW = 1.0e0
-
-       ! New unit
-       IF ( TRIM( UNIT(T,45) ) == 'ppbC' ) THEN
-          UNIT_NEW = 'atoms C/cm2'
-       ELSE
-          UNIT_NEW = 'molec/cm2'
-       ENDIF
-
-       ! Write tracers [molec/cm2] to "tracerinfo.dat"
-       CALL WRITE_TINFO( IU_FILE, NAME(T,45), FNAME(T,45), MWT(T,45), &
-                         MOLC(T,45), SCALE_NEW,   UNIT_NEW, N )
-    ENDDO
-
-    !-------------------------------------
-    ! SPACING*3: Tracers [kg/s]
-    !-------------------------------------
-
-    ! Write separator line
-    CALL WRITE_SEPARATOR( IU_FILE, 300 )
-
-    ! Loop over tracers
-    DO T = 1, NTRAC(45)
-
-       ! GAMAP tracer number
-       N = ( SPACING * 3 ) + T
-
-       ! New scale
-       SCALE_NEW = 1.0e0
-
-       ! New unit
-       IF ( TRIM( UNIT(T,45) ) == 'ppbC' ) THEN
-          UNIT_NEW = 'kg C/s'
-       ELSE
-          UNIT_NEW = 'kg/s'
-       ENDIF
-
-       ! Write tracers [kg/s] to "tracerinfo.dat"
-       CALL WRITE_TINFO( IU_FILE, NAME(T,45), FNAME(T,45), MWT(T,45), &
-                         MOLC(T,45), SCALE_NEW,   UNIT_NEW, N )
-    ENDDO
-
-    !-------------------------------------
-    ! SPACING*4: Tracers [kg]
-    !-------------------------------------
-
-    ! Write separator line
-    CALL WRITE_SEPARATOR( IU_FILE, 400 )
-
-    ! Loop over tracers
-    DO T = 1, NTRAC(45)
-
-       ! GAMAP tracer number
-       N = ( SPACING * 4 ) + T
-
-       ! New scale
-       SCALE_NEW = 1.0e0
-
-       ! New unit
-       IF ( TRIM( UNIT(T,45) ) == 'ppbC' ) THEN
-          UNIT_NEW = 'kg C'
-       ELSE
-          UNIT_NEW = 'kg'
-       ENDIF
-
-       ! Write tracers [kg] to "tracerinfo.dat"
-       CALL WRITE_TINFO( IU_FILE, NAME(T,45), FNAME(T,45), MWT(T,45), &
-                         MOLC(T,45), SCALE_NEW,   UNIT_NEW, N )
-    ENDDO
+!    !-------------------------------------
+!    ! 0: Tracers [ppbv]
+!    !-------------------------------------
+!
+!    ! Write separator line
+!    CALL WRITE_SEPARATOR( IU_FILE, 0 )
+!
+!    ! Loop over tracers
+!    DO T = 1, NTRAC(45)
+!
+!       ! GAMAP tracer number
+!       N = ( SPACING * 0 ) + T
+!
+!       ! Write tracers [ppbv] to "tracerinfo.dat" file
+!       CALL WRITE_TINFO( IU_FILE, NAME(T,45), FNAME(T,45), MWT(T,45), &
+!                         SCALE(T,45), UNIT(T,45), N )
+!    ENDDO
+!
+!    !-------------------------------------
+!    ! SPACING*1: Tracers [molec/cm2/s]
+!    !-------------------------------------
+!
+!    ! Write separator line
+!    CALL WRITE_SEPARATOR( IU_FILE, 100 )
+!
+!    ! Loop over tracers
+!    DO T = 1, NTRAC(45)
+!
+!       ! GAMAP tracer number
+!       N = ( SPACING * 1 ) + T
+!
+!       ! New scale
+!       SCALE_NEW = 1.0e0
+!
+!       ! New unit
+!       IF ( TRIM( UNIT(T,45) ) == 'ppbC' ) THEN
+!          UNIT_NEW = 'atoms C/cm2/s'
+!       ELSE
+!          UNIT_NEW = 'molec/cm2/s'
+!       ENDIF
+!
+!       ! Write tracers [molec/cm2/s] to "tracerinfo.dat"
+!       CALL WRITE_TINFO( IU_FILE, NAME(T,45), FNAME(T,45), MWT(T,45), &
+!                         SCALE_NEW,   UNIT_NEW, N )
+!    ENDDO
+!
+!    !-------------------------------------
+!    ! SPACING*2: Tracers [molec/cm2]
+!    !-------------------------------------
+!
+!    ! Write separator line
+!    CALL WRITE_SEPARATOR( IU_FILE, 200 )
+!
+!    ! Loop over tracers
+!    DO T = 1, NTRAC(45)
+!
+!       ! GAMAP tracer number
+!       N = ( SPACING * 2 ) + T
+!
+!       ! New scale
+!       SCALE_NEW = 1.0e0
+!
+!       ! New unit
+!       IF ( TRIM( UNIT(T,45) ) == 'ppbC' ) THEN
+!          UNIT_NEW = 'atoms C/cm2'
+!       ELSE
+!          UNIT_NEW = 'molec/cm2'
+!       ENDIF
+!
+!       ! Write tracers [molec/cm2] to "tracerinfo.dat"
+!       CALL WRITE_TINFO( IU_FILE, NAME(T,45), FNAME(T,45), MWT(T,45), &
+!                         SCALE_NEW,   UNIT_NEW, N )
+!    ENDDO
+!
+!    !-------------------------------------
+!    ! SPACING*3: Tracers [kg/s]
+!    !-------------------------------------
+!
+!    ! Write separator line
+!    CALL WRITE_SEPARATOR( IU_FILE, 300 )
+!
+!    ! Loop over tracers
+!    DO T = 1, NTRAC(45)
+!
+!       ! GAMAP tracer number
+!       N = ( SPACING * 3 ) + T
+!
+!       ! New scale
+!       SCALE_NEW = 1.0e0
+!
+!       ! New unit
+!       IF ( TRIM( UNIT(T,45) ) == 'ppbC' ) THEN
+!          UNIT_NEW = 'kg C/s'
+!       ELSE
+!          UNIT_NEW = 'kg/s'
+!       ENDIF
+!
+!       ! Write tracers [kg/s] to "tracerinfo.dat"
+!       CALL WRITE_TINFO( IU_FILE, NAME(T,45), FNAME(T,45), MWT(T,45), &
+!                         SCALE_NEW,   UNIT_NEW, N )
+!    ENDDO
+!
+!    !-------------------------------------
+!    ! SPACING*4: Tracers [kg]
+!    !-------------------------------------
+!
+!    ! Write separator line
+!    CALL WRITE_SEPARATOR( IU_FILE, 400 )
+!
+!    ! Loop over tracers
+!    DO T = 1, NTRAC(45)
+!
+!       ! GAMAP tracer number
+!       N = ( SPACING * 4 ) + T
+!
+!       ! New scale
+!       SCALE_NEW = 1.0e0
+!
+!       ! New unit
+!       IF ( TRIM( UNIT(T,45) ) == 'ppbC' ) THEN
+!          UNIT_NEW = 'kg C'
+!       ELSE
+!          UNIT_NEW = 'kg'
+!       ENDIF
+!
+!       ! Write tracers [kg] to "tracerinfo.dat"
+!       CALL WRITE_TINFO( IU_FILE, NAME(T,45), FNAME(T,45), MWT(T,45), &
+!                         SCALE_NEW,   UNIT_NEW, N )
+!    ENDDO
 
     !-------------------------------------
     ! All other diagnostics
@@ -487,7 +486,7 @@ CONTAINS
           ! Write tracers to file
           DO T = 1, NTRAC(D)
              CALL WRITE_TINFO( IU_FILE, NAME(T,D), FNAME(T,D), MWT(T,D), &
-                               MOLC(T,D), SCALE(T,D), UNIT(T,D), INDEX(T,D) )
+                               SCALE(T,D), UNIT(T,D), INDEX(T,D) )
           ENDDO
        ENDIF
     ENDDO
@@ -507,7 +506,7 @@ CONTAINS
 !\\
 ! !INTERFACE:
 !
-  SUBROUTINE WRITE_TINFO( IU_FILE, NAME, FNAME, MWT, MOLC, SCALE, UNIT, N )
+  SUBROUTINE WRITE_TINFO( IU_FILE, NAME, FNAME, MWT, SCALE, UNIT, N )
 !
 ! !USES:
 !
@@ -519,7 +518,6 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN) :: NAME    ! GAMAP short tracer name
     CHARACTER(LEN=*), INTENT(IN) :: FNAME   ! GAMAP long tracer name
     REAL*4,           INTENT(IN) :: MWT     ! Molecular weight [kg/mole]
-    INTEGER,          INTENT(IN) :: MOLC    ! Moles C/mole tracer (for HC's)
     INTEGER,          INTENT(IN) :: N       ! Tracer number
     REAL*4,           INTENT(IN) :: SCALE   ! GAMAP scale factor
     CHARACTER(LEN=*), INTENT(IN) :: UNIT    ! Unit string
@@ -541,7 +539,7 @@ CONTAINS
 
     ! Write one line to "tracerinfo.dat" file
     WRITE( IU_FILE, 100, IOSTAT=IOS ) &
-         ADJUSTL( NAME ), ADJUSTL( FNAME ), MWT, MOLC, N, SCALE, TRIM( UNIT )
+         ADJUSTL( NAME ), ADJUSTL( FNAME ), MWT, N, SCALE, TRIM( UNIT )
 
     ! Error check
     IF ( IOS /= 0 ) CALL IOERROR( IOS, IU_FILE, 'write_tinfo:1' )
@@ -773,9 +771,44 @@ CONTAINS
 #endif
 
     N           = N + 1
+    CATEGORY(N) = 'PEDGE-$'
+    DESCRIPT(N) = 'Pressure at level edges'
+    OFFSET(N)   = SPACING * 10 
+
+    N           = N + 1
+    CATEGORY(N) = 'DAO-FLDS'
+    DESCRIPT(N) = 'GMAO 2-D met fields'
+    OFFSET(N)   = SPACING * 11
+
+    N           = N + 1
+    CATEGORY(N) = 'DAO-3D-$'
+    DESCRIPT(N) = 'GMAO 3-D met fields'
+    OFFSET(N)   = SPACING * 12
+
+    N           = N + 1
+    CATEGORY(N) = 'OD-MAP-$'
+    DESCRIPT(N) = 'Optical Depths'
+    OFFSET(N)   = SPACING * 14
+
+    N           = N + 1
+    CATEGORY(N) = 'CHEM-L=$'
+    DESCRIPT(N) = 'Chemical Prod/Loss'
+    OFFSET(N)   = SPACING * 16
+
+    N           = N + 1
     CATEGORY(N) = 'TIME-SER'
     DESCRIPT(N) = 'Timeseries quantities'
     OFFSET(N)   = SPACING * 19
+
+    N           = N + 1
+    CATEGORY(N) = 'BXHGHT-$'
+    DESCRIPT(N) = 'Boxheight, airmass, etc'
+    OFFSET(N)   = SPACING * 24
+
+    N           = N + 1
+    CATEGORY(N) = 'PBLDEPTH'
+    DESCRIPT(N) = 'Afternoon PBL height'
+    OFFSET(N)   = SPACING * 27
 
     N           = N + 1
     CATEGORY(N) = 'HG-SRCE'
@@ -932,6 +965,11 @@ CONTAINS
     DESCRIPT(N) = 'Lightning flash rates'
     OFFSET(N)   = SPACING * 42
 
+    N           = N + 1
+    CATEGORY(N) = 'IJ-SOA-$'
+    DESCRIPT(N) = 'SOA concentrations'
+    OFFSET(N)   = SPACING * 43
+
     ! For mercury simulation only so we can use same spacing. (ccc, 5/21/10)
     N           = N + 1
     CATEGORY(N) = 'SNOW-HG'
@@ -999,7 +1037,7 @@ CONTAINS
 ! !IROUTINE: init_tracerinfo
 !
 ! !DESCRIPTION: Subroutine INIT\_TRACERINFO initializes the NAME, FNAME,
-!  MWT, MOLC, INDEX, MOLC, UNIT arrays which are used to define the
+!  MWT, INDEX, UNIT arrays which are used to define the
 !  "tracerinfo.dat" file.
 !\\
 !\\
@@ -1013,6 +1051,7 @@ CONTAINS
     USE CMN_DIAG_MOD,       ONLY : PD72R
 #endif
     USE CMN_FJX_MOD,        ONLY : W_
+    USE CMN_SIZE_MOD,       ONLY : NRHAER, NDUST, NSTRATAER
     USE DIAG03_MOD,         ONLY : ND03, PD03, PD03_PL
     USE DIAG53_MOD,         ONLY : ND53, PD53
     USE ErrCode_Mod
@@ -1047,7 +1086,7 @@ CONTAINS
     LOGICAL                 :: DO_TIMESERIES
     CHARACTER(LEN=40)       :: NAME5, NAME6
     REAL(fp),      SAVE     :: POP_XMW
-    REAL(fp)                :: DUM, MolecRatio
+    REAL(fp)                :: DUM
     INTEGER                 :: N_Hg_CATS
     INTEGER                 :: SPC_INDEX
 
@@ -1096,17 +1135,10 @@ CONTAINS
        ! Store quantities for each tracer
        NAME (T,45) = SpcInfo%Name
        FNAME(T,45) = TRIM( NAME(T,45) ) // ' tracer'
-       MOLC (T,45) = SpcInfo%MolecRatio
        SCALE(T,45) = 1.0e+9
        INDEX(T,45) = T   !changed from N (phs, 3/19/03)
-       MWT  (T,45) = SpcInfo%emMW_g * 1.e-3_fp
-
-       ! Special handling for hydrocarbons
-       IF ( MOLC(T,45) > 1 ) THEN
-          UNIT(T,45) = 'ppbC'
-       ELSE
-          UNIT(T,45) = 'ppbv'
-       ENDIF
+       MWT  (T,45) = SpcInfo%MW_g * 1.e-3_fp
+       UNIT(T,45) = 'ppbv'
 
        ! Special handling for Rn-Pb-Be simulation (bmy, 5/11/05)
        IF ( Input_Opt%ITS_A_RnPbBe_SIM ) THEN
@@ -1159,7 +1191,6 @@ CONTAINS
 
           ! Define quantities
           UNIT (T,03) = 'kg'
-          MOLC (T,03) = 1
           MWT  (T,03) = 201e-3
           SCALE(T,03) = 1e0
 
@@ -1272,7 +1303,6 @@ CONTAINS
 
           ! Define quantities
           UNIT (T,03) = 'kg'
-          MOLC (T,03) = 1
           MWT  (T,03) = 201e-3
           SCALE(T,03) = 1e0
 
@@ -1384,7 +1414,6 @@ CONTAINS
 
           ! Define quantities
           UNIT (T,03) = 'kg'
-          MOLC (T,03) = 1
           MWT  (T,03) = 201e-3 ! hard-coded MW
           SCALE(T,03) = 1e0
           NAME (T,03) = SpcInfo%Name
@@ -1398,7 +1427,6 @@ CONTAINS
 
           ! Define quantities
           UNIT (T,03) = 'kg'
-          MOLC (T,03) = 1
           MWT  (T,03) = 201e-3  ! hard-coded MW
           SCALE(T,03) = 1e0
           NAME (T,03) = 'Snow_Hg'
@@ -1412,7 +1440,6 @@ CONTAINS
 
           ! Define quantities
           UNIT (T,03) = 'kg'
-          MOLC (T,03) = 1
           MWT  (T,03) = 201e-3  ! hard-coded MW
           SCALE(T,03) = 1e0
           NAME (T,03) = 'Snow_HgN'
@@ -1427,7 +1454,6 @@ CONTAINS
 
           ! Define quantities
           UNIT (T,03) = 'kg'
-          MOLC (T,03) = 1
           MWT  (T,03) = 201e-3  ! hard-coded MW
           SCALE(T,03) = 1e0
           NAME (T,03) = 'SnHg_ln'
@@ -1441,7 +1467,6 @@ CONTAINS
 
           ! Define quantities
           UNIT (T,03) = 'kg'
-          MOLC (T,03) = 1
           MWT  (T,03) = 201e-3  ! hard-coded MW
           SCALE(T,03) = 1e0
           NAME (T,03) = 'SnHgN_ln'
@@ -1461,7 +1486,6 @@ CONTAINS
 
        ! Define quantities
        UNIT (T,03) = 'kg'
-       MOLC (T,03) = 1
        MWT  (T,03) = 201e-3  ! hard-coded MW
        SCALE(T,03) = 1e0
 
@@ -3725,6 +3749,347 @@ CONTAINS
 
     ENDIF ! LSPLIT
 
+    IF ( DO_TIMESERIES ) THEN
+
+       !-------------------------------------      
+       ! Optical depths
+       !-------------------------------------
+
+       ! Number of tracers
+       NTRAC(21) = 8 + (NRHAER+NDUST)*3 + (NRHAER*2) + (NSTRATAER*3)
+
+       ! Loop over tracers
+       DO T = 1, NTRAC(21)
+
+          ! Define quantities
+          UNIT (T,21) = 'unitless'
+          INDEX(T,21) = T + ( SPACING * 14 )
+          MWT  (T,21) = 0e0
+          SCALE(T,21) = 1e0
+
+          ! Get name long-name (and sometimes, unit)
+          SELECT CASE( T )
+          CASE( 1  )
+             NAME (T,21) = 'OPTD'
+             FNAME(T,21) = 'Cloud optical depth'
+          CASE( 2  )
+             ! GEOS-3, GEOS-4: CLDTOT
+             NAME (T,21) = 'CLDTOT'
+             FNAME(T,21) = '3-D cloud frc'
+          CASE( 3  )
+             NAME (T,21) = 'OBSOLETE1'
+             FNAME(T,21) = 'This diagnostic is obsolete'
+          CASE( 4  )
+             NAME (T,21) = 'OPD'
+             FNAME(T,21) = 'Mineral dust opt depth'
+          CASE( 5  )
+             NAME (T,21) = 'SD'
+             FNAME(T,21) = 'Mineral dust surface area'
+             UNIT (T,21) = 'cm2/cm3'
+          CASE( 6  )
+             NAME (T,21) = 'OPSO4'//Input_Opt%STRWVSELECT(1)
+             FNAME(T,21) = 'Sulfate opt depth (' &
+                           // Input_Opt%STRWVSELECT(1) //'nm)'
+          CASE( 7  )
+             NAME (T,21) = 'HGSO4'
+             FNAME(T,21) = 'Hygr growth of SO4'
+          CASE( 8  )
+             NAME (T,21) = 'SSO4'
+             FNAME(T,21) = 'Sulfate surface area'
+             UNIT (T,21) = 'cm2/cm3'
+          CASE( 9  )
+             NAME (T,21) = 'OPBC'//Input_Opt%STRWVSELECT(1)
+             FNAME(T,21) = 'Black carbon opt depth (' &
+                           // Input_Opt%STRWVSELECT(1) //'nm)'
+          CASE( 10 )
+             NAME (T,21) = 'HGBC'
+             FNAME(T,21) = 'Hygr growth of BC'
+          CASE( 11 )
+             NAME (T,21) = 'SBC'
+             FNAME(T,21) = 'BC surface area'
+             UNIT (T,21) = 'cm2/cm3'
+          CASE( 12 )
+             NAME (T,21) = 'OPOC'//Input_Opt%STRWVSELECT(1)
+             FNAME(T,21) = 'Org carbon opt depth (' &
+                           // Input_Opt%STRWVSELECT(1) //'nm)'
+          CASE( 13 )
+             NAME (T,21) = 'HGOC'
+             FNAME(T,21) = 'Hygr growth of OC'
+          CASE( 14 )
+             NAME (T,21) = 'SOC'
+             FNAME(T,21) = 'OC surface area'
+             UNIT (T,21) = 'cm2/cm3'
+          CASE( 15 )
+             NAME (T,21) = 'OPSSa'//Input_Opt%STRWVSELECT(1)
+             FNAME(T,21) = 'Seasalt (accum) opt depth (' &
+                           // Input_Opt%STRWVSELECT(1) //'nm)'
+          CASE( 16 ) 
+             NAME (T,21) = 'HGSSa'
+             FNAME(T,21) = 'Hygr growth of seasalt (accum)'
+          CASE( 17 )
+             NAME (T,21) = 'SSSa'
+             FNAME(T,21) = 'Seasalt (accum) surface area'
+             UNIT (T,21) = 'cm2/cm3'
+          CASE( 18 )
+             NAME (T,21) = 'OPSSc'//Input_Opt%STRWVSELECT(1)
+             FNAME(T,21) = 'Seasalt (coarse) opt depth (' &
+                           // Input_Opt%STRWVSELECT(1) //'nm)'
+          CASE( 19 ) 
+             NAME (T,21) = 'HGSSc'
+             FNAME(T,21) = 'Hygr growth of seasalt (coarse)'
+          CASE( 20 )
+             NAME (T,21) = 'SSSc'
+             FNAME(T,21) = 'Seasalt (coarse) surface area'
+             UNIT (T,21) = 'cm2/cm3'
+          CASE( 21 )
+             NAME (T,21) = 'OPD1'//Input_Opt%STRWVSELECT(1)
+             FNAME(T,21) = 'Dust bin 1 AOD (' &
+                           // Input_Opt%STRWVSELECT(1) //'nm)'
+          CASE( 22 )
+             NAME (T,21) = 'OPD2'//Input_Opt%STRWVSELECT(1)
+             FNAME(T,21) = 'Dust bin 2 AOD (' &
+                           // Input_Opt%STRWVSELECT(1) //'nm)'
+          CASE( 23 )
+             NAME (T,21) = 'OPD3'//Input_Opt%STRWVSELECT(1)
+             FNAME(T,21) = 'Dust bin 3 AOD (' &
+                           // Input_Opt%STRWVSELECT(1) //'nm)'
+          CASE( 24 )
+             NAME (T,21) = 'OPD4'//Input_Opt%STRWVSELECT(1)
+             FNAME(T,21) = 'Dust bin 4 AOD (' &
+                           // Input_Opt%STRWVSELECT(1) //'nm)'
+          CASE( 25 )
+             NAME (T,21) = 'OPD5'//Input_Opt%STRWVSELECT(1)
+             FNAME(T,21) = 'Dust bin 5 AOD (' &
+                           // Input_Opt%STRWVSELECT(1) //'nm)'
+          CASE( 26 )
+             NAME (T,21) = 'OPD6'//Input_Opt%STRWVSELECT(1)
+             FNAME(T,21) = 'Dust bin 6 AOD (' &
+                           // Input_Opt%STRWVSELECT(1) //'nm)'
+          CASE( 27 )
+             NAME (T,21) = 'OPD7'//Input_Opt%STRWVSELECT(1)
+             FNAME(T,21) = 'Dust bin 7 AOD (' &
+                           // Input_Opt%STRWVSELECT(1) //'nm)'
+          CASE( 28 )
+             NAME (T,21) = 'OPSO4'//Input_Opt%STRWVSELECT(2)
+             FNAME(T,21) = 'Seasalt (accum) opt depth (' &
+                            // Input_Opt%STRWVSELECT(2) // 'nm)'
+          CASE( 29 )
+             NAME (T,21) = 'OPBC' // Input_Opt%STRWVSELECT(2)
+             FNAME(T,21) = 'BC opt depth (' &
+                            // Input_Opt%STRWVSELECT(2) // 'nm)'
+          CASE( 30 )
+             NAME (T,21) = 'OPOC' // Input_Opt%STRWVSELECT(2)
+             FNAME(T,21) = 'OC opt depth (' &
+                            // Input_Opt%STRWVSELECT(2) // 'nm)'
+          CASE( 31 )
+             NAME (T,21) = 'OPSSa' // Input_Opt%STRWVSELECT(2)
+             FNAME(T,21) = 'Seasalt (accum) opt depth (' &
+                            // Input_Opt%STRWVSELECT(2) // 'nm)'
+          CASE( 32 )
+             NAME (T,21) = 'OPSSc' // Input_Opt%STRWVSELECT(2)
+             FNAME(T,21) = 'seasalt (coarse) opt depth (' &
+                            // Input_Opt%STRWVSELECT(2) // 'nm)'
+          CASE( 33 )
+             NAME (T,21) = 'OPD1' // Input_Opt%STRWVSELECT(2)
+             FNAME(T,21) = 'Dust bin 1 AOD (' &
+                            // Input_Opt%STRWVSELECT(2) // 'nm)'
+          CASE( 34 )
+             NAME (T,21) = 'OPD2' // Input_Opt%STRWVSELECT(2)
+             FNAME(T,21) = 'Dust bin 2 AOD (' &
+                            // Input_Opt%STRWVSELECT(2) // 'nm)'
+          CASE( 35 )
+             NAME (T,21) = 'OPD3' // Input_Opt%STRWVSELECT(2)
+             FNAME(T,21) = 'Dust bin 3 AOD (' &
+                            // Input_Opt%STRWVSELECT(2) // 'nm)'
+          CASE( 36 )
+             NAME (T,21) = 'OPD4' // Input_Opt%STRWVSELECT(2) 
+             FNAME(T,21) = 'Dust bin 4 AOD (' &
+                            // Input_Opt%STRWVSELECT(2) // 'nm)'
+          CASE( 37 )
+             NAME (T,21) = 'OPD5' // Input_Opt%STRWVSELECT(2)
+             FNAME(T,21) = 'Dust bin 5 AOD (' &
+                            // Input_Opt%STRWVSELECT(2) // 'nm)'
+          CASE( 38 )
+             NAME (T,21) = 'OPD6' // Input_Opt%STRWVSELECT(2)
+             FNAME(T,21) = 'Dust bin 6 AOD (' &
+                            // Input_Opt%STRWVSELECT(2) // 'nm)'
+          CASE( 39 )
+             NAME (T,21) = 'OPD7' // Input_Opt%STRWVSELECT(2)
+             FNAME(T,21) = 'Dust bin 7 AOD (' &
+                            // Input_Opt%STRWVSELECT(2) // 'nm)'
+          CASE( 40 )
+             NAME (T,21) = 'OPSO4' // Input_Opt%STRWVSELECT(3)
+             FNAME(T,21) = 'Seasalt (accum) opt depth (' &
+                            // Input_Opt%STRWVSELECT(3) // 'nm)'
+          CASE( 41 )
+             NAME (T,21) = 'OPBC' // Input_Opt%STRWVSELECT(3)
+             FNAME(T,21) = 'BC opt depth (' &
+                            // Input_Opt%STRWVSELECT(3) // 'nm)'
+          CASE( 42 )
+             NAME (T,21) = 'OPOC' // Input_Opt%STRWVSELECT(3)
+             FNAME(T,21) = 'OC opt depth (' &
+                            // Input_Opt%STRWVSELECT(3) // 'nm)'
+          CASE( 43 )
+             NAME (T,21) = 'OPSSa' // Input_Opt%STRWVSELECT(3)
+             FNAME(T,21) = 'Seasalt (accum) opt depth (' &
+                            // Input_Opt%STRWVSELECT(3) // 'nm)'
+          CASE( 44 )
+             NAME (T,21) = 'OPSSc' // Input_Opt%STRWVSELECT(3)
+             FNAME(T,21) = 'seasalt (coarse) opt depth (' &
+                            // Input_Opt%STRWVSELECT(3) // 'nm)'
+          CASE( 45 )
+             NAME (T,21) = 'OPD1' // Input_Opt%STRWVSELECT(3)
+             FNAME(T,21) = 'Dust bin 1 AOD (' &
+                            // Input_Opt%STRWVSELECT(3) // 'nm)'
+          CASE( 46 )
+             NAME (T,21) = 'OPD2' // Input_Opt%STRWVSELECT(3)
+             FNAME(T,21) = 'Dust bin 2 AOD (' &
+                            // Input_Opt%STRWVSELECT(3) // 'nm)'
+          CASE( 47 )
+             NAME (T,21) = 'OPD3' // Input_Opt%STRWVSELECT(3)
+             FNAME(T,21) = 'Dust bin 3 AOD (' &
+                            // Input_Opt%STRWVSELECT(3) // 'nm)'
+          CASE( 48 )
+             NAME (T,21) = 'OPD4' // Input_Opt%STRWVSELECT(3)
+             FNAME(T,21) = 'Dust bin 4 AOD (' &
+                            // Input_Opt%STRWVSELECT(3) // 'nm)'
+          CASE( 49 )
+             NAME (T,21) = 'OPD5' // Input_Opt%STRWVSELECT(3)
+             FNAME(T,21) = 'Dust bin 5 AOD (' &
+                            // Input_Opt%STRWVSELECT(3) // 'nm)'
+          CASE( 50 )
+             NAME (T,21) = 'OPD6' // Input_Opt%STRWVSELECT(3)
+             FNAME(T,21) = 'Dust bin 6 AOD (' &
+                            // Input_Opt%STRWVSELECT(3) // 'nm)'
+          CASE( 51 )
+             NAME (T,21) = 'OPD7' // Input_Opt%STRWVSELECT(3)
+             FNAME(T,21) = 'Dust bin 7 AOD (' &
+                            // Input_Opt%STRWVSELECT(3) // 'nm)'
+
+          ! For the UCX simualtion
+          CASE( 52 )
+             NAME (T,21) = 'ODSLA'
+             FNAME(T,21) = 'SLA AOD (600 nm)'
+          CASE( 53 )
+             NAME (T,21) = 'SASLA'
+             FNAME(T,21) = 'SLA surface area'
+             UNIT (T,21) = 'cm2/cm3'
+          CASE( 54 )
+             NAME (T,21) = 'NDSLA'
+             FNAME(T,21) = 'SLA number density'
+             UNIT (T,21) = 'num/cm3'
+          CASE( 55 )
+             NAME (T,21) = 'ODSPA'
+             FNAME(T,21) = 'PSC type 1a/2 AOD (600 nm)'
+          CASE( 56 )
+             NAME (T,21) = 'SASPA'
+             FNAME(T,21) = 'PSC type 1a/2 surface area'
+             UNIT (T,21) = 'cm2/cm3'
+          CASE( 57 )
+             NAME (T,21) = 'NDSPA'
+             FNAME(T,21) = 'SPA number density'
+             UNIT (T,21) = 'num/cm3'
+          CASE( 58 )
+             NAME (T,21) = 'ISOPAOD'
+             FNAME(T,21) = 'Isoprene AOD (550 nm)'
+          CASE( 59 )
+             NAME (T,21) = 'AQAVOL'
+             FNAME(T,21) = 'Aq. aerosol vol (cm3/cm3)'
+          CASE( 60 )
+             NAME (T,21) = 'OBSOLETE2'
+             FNAME(T,21) = 'This diagnostic is obsolete'
+          CASE DEFAULT
+             ! Nothing
+          END SELECT
+
+       ENDDO
+
+       !-------------------------------------      
+       ! Surface pressure (ND31)
+       !-------------------------------------   
+       T           = 1
+       NTRAC(31)   = T
+       NAME (T,31) = 'PSURF'
+       FNAME(T,31) = 'Surface pressure'
+       UNIT (T,31) = 'hPa'
+       INDEX(T,31) = T + ( SPACING * 10 )
+       MWT  (T,31) = 0e0
+       SCALE(T,31) = 1e0
+
+       !-------------------------------------      
+       ! Afternoon-average boundary 
+       ! layer heights (ND41) + timeseries
+       !-------------------------------------      
+
+       ! Number of tracers
+       NTRAC(41) = 2
+
+       ! Loop over tracers
+       DO T = 1, NTRAC(41)
+
+          ! Get name and unit for each met field
+          SELECT CASE( T )
+          CASE( 1 )
+             NAME(T,41) = 'PBL-M'
+             UNIT(T,41) = 'm'
+          CASE( 2 )
+             NAME(T,41) = 'PBL-L'
+             UNIT(T,41) = 'levels'
+          CASE DEFAULT
+             ! Nothing
+          END SELECT
+
+          ! Define the rest of the quantities
+          FNAME(T,41) = 'PBL depth'
+          INDEX(T,41) = T + ( SPACING * 27 )
+          MWT  (T,41) = 0e0
+          SCALE(T,41) = 1e0
+
+       ENDDO
+
+       !-------------------------------------      
+       ! Chemically-produced OH, etc (ND43)
+       !-------------------------------------      
+
+       ! Number of tracers
+       NTRAC(43) = 4
+
+       ! Loop over tracers
+       DO T = 1, NTRAC(43)
+
+          ! Get name and unit for each met field
+          SELECT CASE( T )
+          CASE( 1 )
+             NAME (T,43) = 'OH'
+             UNIT (T,43) = 'molec/cm3'
+             MWT  (T,43) = 17e-3
+             INDEX(T,43) = 1 + ( SPACING * 16 )
+          CASE( 2 )
+             NAME(T,43)  = 'HO2'
+             UNIT(T,43)  = 'v/v'
+             MWT (T,43)  = 33e-3
+             INDEX(T,43) = 3 + ( SPACING * 16 )
+          CASE( 3 )
+             NAME(T,43)  = 'O1D'
+             UNIT(T,43)  = 'molec/cm3'
+             MWT (T,43)  = 16e-3
+             INDEX(T,43) = 4 + ( SPACING * 16 )
+          CASE( 4 )
+             NAME(T,43)  = 'O'
+             UNIT(T,43)  = 'molec/cm3'
+             MWT (T,43)  = 16e-3
+             INDEX(T,43) = 5 + ( SPACING * 16 )   
+          CASE DEFAULT
+             ! Nothing
+          END SELECT
+
+          ! Define the rest of the quantities
+          FNAME(T,43) = 'Chemically produced ' // TRIM( NAME(T,43) )
+          SCALE(T,43) = 1e0
+       ENDDO
+
+    ENDIF ! DO_TIMESERIES
+
 #ifdef TOMAS
     !-------------------------------------
     ! Dry deposition fluxes     (ND44)
@@ -3744,8 +4109,7 @@ CONTAINS
              SpcInfo       => State_Chm%SpcData(T)%Info
              NAME (N,44)   = TRIM( SpcInfo%Name ) // 'df'
              FNAME(N,44)   = TRIM( SpcInfo%Name ) // ' drydep flux'
-             MWT  (N,44)   = SpcInfo%emMW_g * 1.e-3_fp
-             MOLC (N,44)   = SpcInfo%MolecRatio
+             MWT  (N,44)   = SpcInfo%MW_g * 1.e-3_fp
              SCALE(N,44)   = 1.0e0
              INDEX(N,44)   = T + ( SPACING * 36 )
              NTRAC(44)     = NTRAC(44) + 1
@@ -3763,8 +4127,7 @@ CONTAINS
              NN            = N + nDryDep  +(ICOMP-IDIAG)*IBINS
              NAME (NN,44)  = TRIM( SpcInfo%Name ) // 'dv'
              FNAME(NN,44)  = TRIM( SpcInfo%Name ) // ' drydep velocity'
-             MWT  (NN,44)  = SpcInfo%emMW_g * 1.e-3_fp
-             MOLC (NN,44)  = SpcInfo%MolecRatio
+             MWT  (NN,44)  = SpcInfo%MW_g * 1.e-3_fp
              UNIT (NN,44)  = 'cm/s'
              SCALE(NN,44)  = 1.0e0
              INDEX(NN,44)  = T + ( SPACING * 37 )
@@ -3782,8 +4145,7 @@ CONTAINS
              NAME (N,44)  = TRIM( SpcInfo%Name ) // 'df'
              FNAME(N,44)  = TRIM( SpcInfo%Name ) // ' drydep flux'
              UNIT (N,44)  = 'molec/cm2/s'
-             MWT  (N,44)  = SpcInfo%emMW_g * 1.e-3_fp
-             MOLC (N,44)  = SpcInfo%MolecRatio
+             MWT  (N,44)  = SpcInfo%MW_g * 1.e-3_fp
              SCALE(N,44)  = 1.0e0
              INDEX(N,44)  = T + ( SPACING * 36 )
              NTRAC(44)    = NTRAC(44) + 1
@@ -3794,8 +4156,7 @@ CONTAINS
              NN            = N + nDryDep + (ICOMP-IDIAG)* IBINS
              NAME (NN,44)  = TRIM( SpcInfo%Name ) // 'dv'
              FNAME(NN,44)  = TRIM( SpcInfo%Name ) // ' drydep velocity'
-             MWT  (NN,44)  = SpcInfo%emMW_g * 1.e-3_fp
-             MOLC (NN,44)  = SpcInfo%MolecRatio
+             MWT  (NN,44)  = SpcInfo%MW_g * 1.e-3_fp
              UNIT (NN,44)  = 'cm/s'
              SCALE(NN,44)  = 1.0e0
              INDEX(NN,44)  = T + ( SPACING * 37 )
@@ -3809,7 +4170,7 @@ CONTAINS
 #endif
 
     !-------------------------------------
-    ! Time series diags (ND{48,49,50,51})
+    ! Timeseries diagnostics
     !-------------------------------------
     IF ( DO_TIMESERIES ) THEN
 
@@ -3822,7 +4183,6 @@ CONTAINS
 
           ! Define quantities
           INDEX(T,48) = T + ( SPACING * 19 )
-          MOLC (T,48) = 1
           MWT  (T,48) = 0e0
           SCALE(T,48) = 1e0
 
@@ -3916,7 +4276,6 @@ CONTAINS
        DO T = 1, PD53
 
           ! Define quantities
-          MOLC (T,53) = 1
           MWT  (T,53) = Input_Opt%POP_XMW
           SCALE(T,53) = 1e0
 
@@ -4098,7 +4457,6 @@ CONTAINS
           NAME (T,60) = SpcInfo%Name
           FNAME(T,60) = 'Rates from ND60 TOMAS diagnostic'
           INDEX(T,60) = T + ( SPACING * 6 )
-          MOLC (T,60) = 1
           MWT  (T,60) = 1e0
           SCALE(T,60) = 1e0
        ENDDO
@@ -4129,7 +4487,6 @@ CONTAINS
           ! Define the rest of the quantities
           UNIT (T,61) = 'cm-3s-1'
           INDEX(T,61) = T + ( SPACING * 7 )
-          MOLC (T,61) = 1
           MWT  (T,61) = 1e0
           SCALE(T,61) = 1e0
        ENDDO
@@ -4148,7 +4505,6 @@ CONTAINS
           NAME (T,65) = Input_Opt%FAM_NAME( T )
           FNAME(T,65) = TRIM( NAME(T,65) ) // ' P/L family'
           INDEX(T,65) = T + ( SPACING * 17 )
-          MOLC (T,65) = 1
           MWT  (T,65) = 0e0
           SCALE(T,65) = 1e0
 
@@ -4182,6 +4538,203 @@ CONTAINS
     ENDIF
 #endif
 
+    IF ( DO_TIMESERIES ) THEN
+
+       !-------------------------------------      
+       ! 3-D GMAO met fields (ND66)
+       ! also for timeseries diagnostics
+       !-------------------------------------      
+
+       ! Number of tracers
+       NTRAC(66) = 7
+
+       ! Loop over tracers
+       DO T = 1, NTRAC(66)
+
+          ! Get name and unit for each met field
+          SELECT CASE( T )
+          CASE( 1  )
+             NAME(T,66) = 'UWND'
+             UNIT(T,66) = 'm/s'
+          CASE( 2  )
+             NAME(T,66) = 'VWND'
+             UNIT(T,66) = 'm/s'
+          CASE( 3  )
+             NAME(T,66) = 'TMPU'
+             UNIT(T,66) = 'K'
+          CASE( 4 )
+             NAME(T,66) = 'SPHU'
+             UNIT(T,66) = 'g/kg'
+          CASE( 5 )
+             NAME(T,66) = 'CMFMC'
+             UNIT(T,66) = 'kg/m2/s'
+          CASE( 6 )
+             NAME(T,66) = 'DTRAIN'
+             UNIT(T,66) = 'kg/m2/s'
+          CASE( 7 )
+             NAME(T,66) = 'OMEGA'
+             UNIT(T,66) = 'Pa/s'
+          CASE DEFAULT
+             ! Nothing
+          END SELECT
+
+          ! Define the rest of the quantities
+          FNAME(T,66) = 'GMAO ' // TRIM( NAME(T,66) ) // ' field'
+          INDEX(T,66) = T + ( SPACING * 12 )
+          MWT  (T,66) = 0e0
+          SCALE(T,66) = 1e0
+       ENDDO
+
+       !-------------------------------------      
+       ! 2-D GMAO met fields (ND67)
+       !-------------------------------------      
+
+       ! Number of tracers
+       NTRAC(67) = 23 ! (Lin, 03/31/09)
+
+       ! Loop over tracers
+       DO T = 1, NTRAC(67)
+
+          ! Get name and unit for each met field
+          SELECT CASE( T )
+          CASE( 1  )
+             NAME(T,67) = 'HFLUX'
+             UNIT(T,67) = 'W/m2'
+          CASE( 2  )
+             NAME(T,67) = 'RADSWG'
+             UNIT(T,67) = 'W/m2'
+          CASE( 3  )
+             NAME(T,67) = 'PREACC'
+             UNIT(T,67) = 'mm/day'
+          CASE( 4  )
+             NAME(T,67) = 'PRECON'
+             UNIT(T,67) = 'mm/day'
+          CASE( 5  )
+             NAME(T,67) = 'TS'
+             UNIT(T,67) = 'K'
+          CASE( 6  )
+             NAME(T,67) = 'RADSWT'
+             UNIT(T,67) = 'W/m2'
+          CASE( 7  )
+             NAME(T,67) = 'USTAR'
+             UNIT(T,67) = 'm/s'
+          CASE( 8  )
+             NAME(T,67) = 'Z0'
+             UNIT(T,67) = 'm'
+          CASE( 9  )
+             NAME(T,67) = 'PBL'
+             UNIT(T,67) = 'm'
+          CASE( 10 )
+             NAME(T,67) = 'CLDFRC'
+             UNIT(T,67) = 'unitless'
+          CASE( 11 )
+             NAME(T,67) = 'U10M'
+             UNIT(T,67) = 'm/s'
+          CASE( 12 )
+             NAME(T,67) = 'V10M'
+             UNIT(T,67) = 'm/s'
+          CASE( 13 )
+             NAME(T,67) = 'PS_PBL'
+             UNIT(T,67) = 'hPa'
+          CASE( 14 )
+             NAME(T,67) = 'ALBD'
+             UNIT(T,67) = 'unitless'
+          CASE( 15 )
+             NAME(T,67) = 'PHIS'
+             UNIT(T,67) = 'm'
+          CASE( 16 )
+             NAME(T,67) = 'CLDTOP'
+             UNIT(T,67) = 'level'
+          CASE( 17 )
+             NAME(T,67) = 'TROPPRAW'
+             UNIT(T,67) = 'hPa'
+          CASE( 18 )
+             NAME(T,67) = 'SLP'
+             UNIT(T,67) = 'hPa'
+          CASE( 19 )
+             NAME(T,67) = 'TSKIN'
+             UNIT(T,67) = 'K'
+          CASE( 20 )
+             NAME(T,67) = 'PARDF'
+             UNIT(T,67) = 'W/m2'
+          CASE( 21 )
+             NAME(T,67) = 'PARDR'
+             UNIT(T,67) = 'W/m2'
+          CASE( 22 )
+             NAME(T,67) = 'GWET'
+             UNIT(T,67) = 'unitless'
+          CASE( 23 )
+             ! Add EFLUX (Lin, 05/16/08)
+             NAME(T,67) = 'EFLUX'
+             UNIT(T,67) = 'W/m2'
+          CASE DEFAULT
+             ! Nothing
+          END SELECT
+
+          ! Define the rest of the quantities
+          FNAME(T,67) = 'GMAO ' // TRIM( NAME(T,67) ) // ' field'
+          INDEX(T,67) = T + ( SPACING * 11 )
+          MWT  (T,67) = 0e0
+          SCALE(T,67) = 1e0
+       ENDDO
+
+       !-------------------------------------      
+       ! Grid box heights and related 
+       ! quantities (ND68) + timeseries
+       !-------------------------------------      
+
+       ! Number of tracers
+       NTRAC(68) = 8
+
+       ! Loop over tracers
+       DO T = 1, NTRAC(68)
+
+          ! Get name and unit for each met field
+          SELECT CASE( T )
+          CASE( 1 )
+             NAME (T,68) = 'BXHEIGHT'
+             FNAME(T,68) = 'Grid box height'
+             UNIT (T,68) = 'm'
+          CASE( 2 )
+             NAME (T,68) = 'AD'
+             FNAME(T,68) = 'Air mass in grid box'
+             UNIT (T,68) = 'kg'
+          CASE( 3 )
+             NAME (T,68) = 'AVGW'
+             FNAME(T,68) = 'Mixing ratio of H2O vapor'
+             UNIT (T,68) = 'v/v'
+          CASE( 4 )
+             NAME (T,68) = 'AIRNUMDEN'
+             FNAME(T,68) = 'Dry air number density'
+             UNIT (T,68) = 'molec air/cm3'
+          CASE( 5 )
+             NAME (T,68) = 'T'
+             FNAME(T,68) = 'Temperature'
+             UNIT (T,68) = 'K'
+          CASE( 6 )
+             NAME (T,68) = 'PMID'
+             FNAME(T,68) = 'Pressure at average pressure level'
+             UNIT (T,68) = 'hPa'
+          CASE( 7 )
+             NAME (T,68) = 'PEDGE'
+             FNAME(T,68) = 'Pressure at grid box lower edge'
+             UNIT (T,68) = 'hPa'
+          CASE( 8 )
+             NAME (T,68) = 'RH'
+             FNAME(T,68) = 'Relative humidity'
+             UNIT (T,68) = '%'
+          CASE DEFAULT
+             ! Nothing
+          END SELECT
+
+          ! Define the rest of the quantities
+          INDEX(T,68) = T + ( SPACING * 24 )
+          MWT  (T,68) = 0e0
+          SCALE(T,68) = 1e0
+       ENDDO
+
+    ENDIF ! DO_TIMERSERIES
+
 #ifdef RRTMG
     !-------------------------------------
     ! Radiation outputs (ND72)
@@ -4201,7 +4754,6 @@ CONTAINS
 
           ! Define quantities
           INDEX(T,72) = T + ( SPACING * 72 )
-          MOLC (T,72) = 1
           MWT  (T,72) = 0e0
           SCALE(T,72) = 1e0
 
@@ -4449,10 +5001,6 @@ CONTAINS
        IF ( AS /= 0 ) CALL ALLOC_ERR( 'INDEX' )
        INDEX = 0
 
-       ALLOCATE( MOLC( MAXTRACER_HG, MAXDIAG ), STAT=AS )
-       IF ( AS /= 0 ) CALL ALLOC_ERR( 'MOLC' )
-       MOLC = 0
-
        ALLOCATE( MWT( MAXTRACER_HG, MAXDIAG ), STAT=AS )
        IF ( AS /= 0 ) CALL ALLOC_ERR( 'MWT' )
        MWT = 0.0
@@ -4478,10 +5026,6 @@ CONTAINS
        ALLOCATE( INDEX( MAXTRACER, MAXDIAG ), STAT=AS )
        IF ( AS /= 0 ) CALL ALLOC_ERR( 'INDEX' )
        INDEX = 0
-
-       ALLOCATE( MOLC( MAXTRACER, MAXDIAG ), STAT=AS )
-       IF ( AS /= 0 ) CALL ALLOC_ERR( 'MOLC' )
-       MOLC = 0
 
        ALLOCATE( MWT( MAXTRACER, MAXDIAG ), STAT=AS )
        IF ( AS /= 0 ) CALL ALLOC_ERR( 'MWT' )
@@ -4541,7 +5085,6 @@ CONTAINS
     IF ( ALLOCATED( DESCRIPT ) ) DEALLOCATE( DESCRIPT )
     IF ( ALLOCATED( FNAME    ) ) DEALLOCATE( FNAME    )
     IF ( ALLOCATED( INDEX    ) ) DEALLOCATE( INDEX    )
-    IF ( ALLOCATED( MOLC     ) ) DEALLOCATE( MOLC     )
     IF ( ALLOCATED( MWT      ) ) DEALLOCATE( MWT      )
     IF ( ALLOCATED( NAME     ) ) DEALLOCATE( NAME     )
     IF ( ALLOCATED( NTRAC    ) ) DEALLOCATE( NTRAC    )

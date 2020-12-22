@@ -1,5 +1,5 @@
 !------------------------------------------------------------------------------
-!                  Harvard-NASA Emissions Component (HEMCO)                   !
+!                  GEOS-Chem Global Chemical Transport Model                  !
 !------------------------------------------------------------------------------
 !BOP
 !
@@ -46,7 +46,7 @@ MODULE Emissions_Mod
 CONTAINS
 !EOC
 !------------------------------------------------------------------------------
-!                  Harvard-NASA Emissions Component (HEMCO)                   !
+!                  GEOS-Chem Global Chemical Transport Model                  !
 !------------------------------------------------------------------------------
 !BOP
 !
@@ -64,7 +64,7 @@ CONTAINS
 ! !USES:
 !
     USE ErrCode_Mod
-    USE HCOI_GC_Main_Mod,   ONLY : HCoi_GC_Init
+    USE HCO_Interface_GC_Mod, ONLY : HCoi_GC_Init
     USE HCO_Types_Mod,      ONLY : ConfigObj
     USE Input_Opt_Mod,      ONLY : OptInput
     USE State_Chm_Mod,      ONLY : ChmState
@@ -126,7 +126,7 @@ CONTAINS
   END SUBROUTINE Emissions_Init
 !EOC
 !------------------------------------------------------------------------------
-!                  Harvard-NASA Emissions Component (HEMCO)                   !
+!                  GEOS-Chem Global Chemical Transport Model                  !
 !------------------------------------------------------------------------------
 !BOP
 !
@@ -147,7 +147,7 @@ CONTAINS
     USE CO2_MOD,            ONLY : EMISSCO2
     USE ErrCode_Mod
     USE GLOBAL_CH4_MOD,     ONLY : EMISSCH4
-    USE HCOI_GC_MAIN_MOD,   ONLY : HCOI_GC_RUN
+    USE HCO_Interface_GC_Mod,   ONLY : HCOI_GC_RUN
     USE Input_Opt_Mod,      ONLY : OptInput
     USE Precision_Mod
     USE State_Chm_Mod,      ONLY : ChmState
@@ -157,7 +157,6 @@ CONTAINS
     USE Time_Mod,           ONLY : Get_Ts_Emis
     Use SfcVmr_Mod,         Only : FixSfcVmr_Run
     USE MERCURY_MOD,        ONLY : EMISSMERCURY
-    USE Pops_Mod,           ONLY : GetPopsDiagsFromHemco
 #ifdef TOMAS
     USE CARBON_MOD,         ONLY : EMISSCARBONTOMAS !jkodros
     USE SULFATE_MOD,        ONLY : EMISSSULFATETOMAS !jkodros
@@ -202,7 +201,6 @@ CONTAINS
     ! HEMCO data list, phase 2 will perform the emission calculations.
     CALL HCOI_GC_Run( Input_Opt, State_Chm, State_Grid, &
                       State_Met, EmisTime,  Phase,     RC          )
-
     ! Trap potential errors
     IF ( RC /= GC_SUCCESS ) THEN
        ErrMsg = 'Error encountered in "HCOI_GC_Run"!'
@@ -301,24 +299,8 @@ CONTAINS
        ENDIF
     ENDIF
 
-    ! For the POPS simulation, copy values from several HEMCO-based manual
-    ! diagnostics (defined in hcoi_gc_diagn_mod.F90) from the HEMCO state
-    ! object into the State_Diag object.  This will allow us to save these
-    ! fields to netCDF output via HISTORY. (bmy, 10/15/18)
-    IF ( Input_Opt%ITS_A_POPS_SIM ) THEN
-       CALL GetPopsDiagsFromHemco( Input_Opt, State_Diag, RC )
-
-       ! Trap potential errors
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Error encountered in "GetPopsDiagsFromHemco"!'
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-    ENDIF
-
     ! Prescribe some concentrations if needed
     IF ( Input_Opt%ITS_A_FULLCHEM_SIM ) THEN
-
        ! Set other (non-UCX) fixed VMRs
        If ( Input_Opt%LEMIS ) Then
           CALL FixSfcVMR_Run( Input_Opt, State_Chm, State_Grid, State_Met, RC )
@@ -344,7 +326,7 @@ CONTAINS
    END SUBROUTINE EMISSIONS_RUN
 !EOC
 !------------------------------------------------------------------------------
-!                  Harvard-NASA Emissions Component (HEMCO)                   !
+!                  GEOS-Chem Global Chemical Transport Model                  !
 !------------------------------------------------------------------------------
 !BOP
 !
@@ -361,7 +343,7 @@ CONTAINS
 ! !USES:
 !
     USE ErrCode_Mod
-    USE HCOI_GC_Main_Mod, ONLY : HCOI_GC_Final
+    USE HCO_Interface_GC_Mod, ONLY : HCOI_GC_Final
 !
 ! !INPUT PARAMETERS:
 !
@@ -402,7 +384,7 @@ CONTAINS
   END SUBROUTINE Emissions_Final
 !EOC
 !------------------------------------------------------------------------------
-!                  Harvard-NASA Emissions Component (HEMCO)                   !
+!                  GEOS-Chem Global Chemical Transport Model                  !
 !------------------------------------------------------------------------------
 !BOP
 !
@@ -420,9 +402,6 @@ CONTAINS
 ! !USES:
 !
     USE ErrCode_Mod
-    USE HCO_INTERFACE_MOD,  ONLY : HcoState
-    USE HCO_EmisList_Mod,   ONLY : HCO_GetPtr
-    USE HCO_STATE_MOD,      ONLY : HCO_GetHcoID
     USE Input_Opt_Mod,      ONLY : OptInput
     USE PhysConstants
     USE Species_Mod,        ONLY : Species
